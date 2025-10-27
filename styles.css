@@ -1,0 +1,230 @@
+/* --- SUBTLE DARK MODE THEME COLORS (TEAL/GREEN ACCENT) --- */
+:root {
+    --dark-bg: #1e1e1e;      /* Almost black */
+    --dark-card: #282828;    /* Dark gray panel background */
+    --dark-inner: #363636;   /* Medium dark gray for recessed sections */
+    --light-text: #e0e0e0;   /* Light gray text */
+    --subtle-text: #a0a0a0;  /* Subtle gray text */
+
+    /* Subtle Accents: Teal (Primary), Lime (Secondary), Yellow (Tertiary) */
+    --accent-3: #10b981;     /* Teal-500/Emerald (Primary Click/Main Accents) */
+    --accent-2: #84cc16;     /* Lime-500 (Secondary Click/Highlight) */
+    --accent-1: #fbbf24;     /* Amber-400 (Tertiary Click/Weak Accent) */
+    --main-highlight: #0d9488; /* Teal-700 (BPM/Title Accent) */
+    --start-btn-stop: #dc2626; /* Red-600 for the STOP button */
+    
+    /* Font */
+    --main-font: 'IBM Plex Mono', monospace;
+}
+body {
+    /* CORE FIX: Set full viewport height and prevent scrolling */
+    height: 100vh;
+    overflow: hidden;
+    
+    font-family: var(--main-font);
+    background-color: var(--dark-bg);
+    color: var(--light-text);
+    transition: all 0.2s ease-in-out;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+    touch-action: manipulation; 
+    font-size: 0.9rem; 
+}
+/* Ensure elements use the specified font */
+h1, h2, h3, button, input {
+    font-family: var(--main-font);
+}
+
+/* Style for the main metronome control card */
+#metronome-panel {
+    background-color: var(--dark-card);
+    color: var(--light-text);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    border: 1px solid #444;
+    /* Safety constraint: ensures the panel doesn't exceed viewport height if content is still too big */
+    max-height: 95vh;
+    overflow-y: auto; 
+}
+
+/* Adjust title to the new highlight color */
+#metronome-panel h1 {
+    color: var(--main-highlight);
+}
+
+/* --- FIX: New selector for inner recessed sections (BPM area, Grid, Bar Drop area) --- */
+.inner-panel-section { 
+    background-color: var(--dark-inner);
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+    border: 1px solid #444;
+}
+/* --- END FIX --- */
+
+/* --- NEW FIX: Force transparency for the placeholder H1 to override the general H1 style --- */
+.h1-placeholder {
+    color: transparent !important; 
+}
+/* --- END NEW FIX --- */
+
+/* BPM Display Value */
+#bpm-display-value, 
+#bar-drop-display,
+#bpm-manual-input {
+    color: var(--accent-3);
+    text-shadow: 0 0 5px rgba(16, 185, 129, 0.4); 
+}
+
+/* Manual BPM Input */
+#bpm-manual-input {
+    background-color: #000;
+    border-color: var(--accent-3);
+    color: var(--accent-3);
+    -webkit-appearance: none; 
+    -moz-appearance: textfield; 
+    appearance: none;
+    margin: 0; 
+}
+
+/* General Button Styles (Tempo, Settings, Clear/Reset) */
+.tempo-btn, .settings-btn, #clear-btn, #default-btn, #bar-drop-reset-btn, #count-in-btn, #settings-btn, .mode-btn {
+    font-size: 0.75rem; 
+    font-weight: 700;
+    border-radius: 0.5rem;
+    transition-property: all;
+    transition-duration: 150ms;
+    background-color: #3d3d3d; 
+    color: var(--light-text);
+    border: 1px solid #444;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    touch-action: manipulation;
+}
+.tempo-btn:hover, .settings-btn:hover, #clear-btn:hover, #default-btn:hover, #bar-drop-reset-btn:hover, #count-in-btn:hover, #settings-btn:hover, .mode-btn:hover {
+    background-color: #555;
+}
+.tempo-btn:active, .settings-btn:active, #clear-btn:active, #default-btn:active, #bar-drop-reset-btn:active, #count-in-btn:active, #settings-btn:active, .mode-btn:active {
+    background-color: #666;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+/* Accent Buttons: Default Pattern, +1 Bar Drop, Count-In (using the main highlight) */
+#default-btn, #bar-drop-increase-btn, #count-in-btn {
+    background-color: var(--main-highlight);
+    color: var(--dark-bg);
+}
+#default-btn:hover, #bar-drop-increase-btn:hover, #count-in-btn:hover {
+    background-color: #17a297;
+}
+
+/* START/STOP Button */
+#start-stop-btn {
+    background-color: var(--accent-3); 
+    color: var(--dark-bg); 
+    font-size: 1.1rem; 
+}
+#start-stop-btn:hover {
+    background-color: #20c997; 
+}
+/* STOP state color override (Subtle Red) */
+.bg-green-600, .hover\:bg-green-500, .active\:bg-green-700, .focus\:ring-green-500 {
+    background-color: var(--start-btn-stop) !important;
+    color: var(--light-text) !important;
+}
+
+/* Mode Selection Buttons SELECTED state (Subtle highlight) */
+/* --- FIX: Target the custom class 'mode-selected' instead of old Tailwind placeholders --- */
+.mode-btn.mode-selected { 
+    background-color: var(--main-highlight) !important;
+    color: var(--dark-bg) !important;
+}
+
+/* Rhythm Grid & Square Styling */
+#rhythm-grid {
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7);
+}
+.grid-square {
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+    transition: background-color 0.1s ease-out, transform 0.05s;
+    cursor: pointer;
+    border: 1px solid #3d3d3d; 
+}
+
+/* State Mapping (0=Off, 1=Tertiary, 2=Secondary, 3=Primary) */
+.square-accent-3 { 
+    background-color: var(--accent-3); /* Teal */
+}
+.square-accent-2 { 
+    background-color: var(--accent-2); /* Lime */
+}
+.square-accent-1 { 
+    background-color: var(--accent-1); /* Amber */
+}
+.square-accent-0 { /* Off/Muted - Darkest state */
+    background-color: #1a1a1a;
+}
+
+/* Visual indicator for the currently playing step */
+.is-playing {
+    box-shadow: 0 0 15px 5px var(--accent-3), inset 0 0 5px rgba(255, 255, 255, 0.5); 
+    border-color: #fff; 
+    transform: scale(1.05);
+}
+/* Visual indicator for the currently playing step during a SILENT bar */
+.is-silent-playing {
+    box-shadow: 0 0 10px 3px #555, inset 0 0 3px #333; 
+    border-color: #777; 
+}
+
+/* Status Message and Info Button Area */
+.flex.justify-between.items-center.p-3.rounded-lg.border {
+    background-color: var(--dark-inner);
+    border-color: #444;
+}
+#status-message {
+    color: var(--accent-3); 
+    font-size: 0.8rem;
+}
+.text-xs.text-center.mb-2.font-mono {
+    color: var(--subtle-text);
+}
+
+/* Modal Styling */
+#settings-modal > div, #info-modal > div {
+    background-color: var(--dark-card);
+    color: var(--light-text);
+    border: 1px solid var(--accent-3);
+}
+#settings-modal h2, #info-modal h2 {
+    color: var(--main-highlight);
+}
+#settings-modal #close-modal-btn, #info-modal #close-info-modal-btn {
+    color: #999;
+}
+#settings-controls .bg-gray-100 {
+    background-color: #3d3d3d !important;
+    border-left-color: var(--accent-3) !important;
+}
+/* Accent text in info modal */
+#info-content strong { color: var(--light-text); }
+.text-primary-accent { color: var(--accent-3); }
+.text-secondary-accent { color: var(--accent-2); }
+.text-tertiary-accent { color: var(--accent-1); }
+.text-off-accent { color: var(--subtle-text); }
+
+
+/* Custom slider track and thumb */
+input[type=range] {
+    background: #555;
+}
+input[type=range]::-webkit-slider-thumb {
+    background: var(--accent-3); 
+}
+input[type=range]::-moz-range-thumb {
+    background: var(--accent-3); 
+}
+/* Select inputs for dark mode */
+#settings-controls select {
+    background-color: #3d3d3d;
+    border-color: #555;
+    color: var(--light-text);
+    font-family: var(--main-font);
+}
