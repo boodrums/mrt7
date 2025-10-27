@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>MRT7 Rhythm Trainer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="flex items-center justify-center p-4">
+
+    <div id="metronome-panel" class="w-full max-w-lg lg:max-w-4xl p-4 sm:p-6 rounded-xl">
+        
+        <h1 class="text-3xl sm:text-4xl font-extrabold mb-5 text-center tracking-wider lg:hidden">MRT7 Rhythm Trainer</h1>
+        
+        <div class="lg:grid lg:grid-cols-2 lg:gap-6">
+            
+            <div id="col-left" class="mb-6 lg:mb-0">
+                
+                <h1 class="text-3xl sm:text-4xl font-extrabold mb-5 tracking-wider hidden lg:block">MRT7 Rhythm Trainer</h1>
+                
+                <div class="mb-5 p-3 rounded-lg inner-panel-section">
+                    
+                    <div class="flex flex-col items-center justify-center mb-4">
+                        <div id="bpm-display-wrapper" class="cursor-pointer p-1 rounded-lg transition duration-150">
+                            <span id="bpm-display-value" class="text-5xl sm:text-6xl font-extrabold">120 BPM</span>
+                        </div>
+                        <input id="bpm-manual-input" type="number" min="30" max="300" value="120"
+                               class="hidden w-40 text-5xl sm:text-6xl font-extrabold text-center rounded-md p-1 border-2 transition duration-150">
+                    </div>
+
+                    <div id="tempo-controls" class="grid grid-cols-6 gap-2 mt-4">
+                        <button data-delta="-10" class="tempo-btn">-10</button>
+                        <button data-delta="-5" class="tempo-btn">-5</button>
+                        <button data-delta="-1" class="tempo-btn">-1</button>
+                        <button data-delta="1" class="tempo-btn">+1</button>
+                        <button data-delta="5" class="tempo-btn">+5</button>
+                        <button data-delta="10" class="tempo-btn">+10</button>
+                    </div>
+                </div>
+
+                <div id="rhythm-grid" class="grid gap-2 aspect-square p-2 rounded-lg shadow-inner inner-panel-section">
+                    </div>
+                
+            </div>
+
+            <div id="col-right" class="space-y-4 lg:pt-0">
+                
+                <h1 class="text-3xl sm:text-4xl font-extrabold mb-5 tracking-wider hidden lg:block h1-placeholder pointer-events-none select-none">MRT7 Rhythm Trainer</h1>
+
+                <div class="flex space-x-2 sm:space-x-4">
+                    <button id="count-in-btn" class="flex-shrink-0 w-1/4 px-2 py-2 text-xs sm:text-sm font-bold rounded-xl shadow-lg transition duration-200">
+                        Count-In: 0
+                    </button>
+                    <button id="start-stop-btn" class="w-2/4 px-6 py-2 text-lg font-bold rounded-xl shadow-lg transition duration-200">
+                        START
+                    </button>
+                    <button id="settings-btn" class="flex-shrink-0 w-1/4 px-2 py-2 text-xs sm:text-sm font-bold rounded-xl shadow-lg transition duration-200">
+                        Settings
+                    </button>
+                </div>
+                
+                <div class="flex justify-center space-x-4">
+                    <button id="mode-16-btn" data-mode="16" class="mode-btn w-1/2 py-2 text-sm font-bold rounded-lg transition duration-150 shadow-md">
+                        16-Step
+                    </button>
+                    <button id="mode-12-btn" data-mode="12" class="mode-btn mode-12-btn w-1/2 py-2 text-sm font-bold rounded-lg transition duration-150 shadow-md">
+                        12-Step
+                    </button>
+                </div>
+
+                <div class="flex justify-between space-x-4">
+                    <button id="clear-btn" class="w-1/2 py-2 font-bold rounded-lg transition duration-150 shadow-md">
+                        Clear
+                    </button>
+                    <button id="default-btn" class="w-1/2 py-2 font-bold rounded-lg transition duration-150 shadow-md">
+                        Default
+                    </button>
+                </div>
+                
+                <div class="p-3 rounded-lg inner-panel-section">
+                    <div class="flex items-center justify-between space-x-4">
+                        <button id="bar-drop-reset-btn" class="py-1 px-3 font-bold rounded-lg transition duration-150 text-sm shadow-sm">
+                            Reset (0)
+                        </button>
+                        <div id="bar-drop-display" class="text-2xl font-extrabold">
+                            0 BARS
+                        </div>
+                        <button id="bar-drop-increase-btn" class="py-1 px-3 font-bold rounded-lg transition duration-150 text-sm shadow-md">
+                            +1 Bar Drop
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-sm pt-2">
+                    <p class="text-xs text-center mb-2 font-mono">
+                        Tempo Keys: ←/→ (± 1) &bull; ↑/↓ (± 5) &bull; <strong>Spacebar (Start/Stop)</strong>
+                    </p>
+
+                    <div class="flex justify-between items-center p-3 rounded-lg border">
+                        <p id="status-message" class="font-medium text-left truncate">Ready. Set your pattern and press START.</p>
+                        <button id="info-btn" class="settings-btn px-3 py-1 text-xs sm:text-sm">
+                            Info
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        </div>
+
+    <div id="settings-modal" class="fixed inset-0 z-50 bg-black bg-opacity-75 hidden flex items-center justify-center p-4">
+        <div class="rounded-xl shadow-2xl w-full max-w-lg p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Audio Settings</h2>
+                <button id="close-modal-btn" class="transition duration-150 text-3xl leading-none font-light">&times;</button>
+            </div>
+            
+            <div id="settings-controls" class="space-y-6">
+                </div>
+            
+            <div class="mt-8 text-center">
+                <p class="text-sm">Pitch range: 50Hz (low) to 1500Hz (high). Timbre selection changes the oscillator waveform.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div id="info-modal" class="fixed inset-0 z-50 bg-black bg-opacity-75 hidden flex items-center justify-center p-4">
+        <div class="rounded-xl shadow-2xl w-full max-w-lg p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Metronome Instructions</h2>
+                <button id="close-info-modal-btn" class="transition duration-150 text-3xl leading-none font-light">&times;</button>
+            </div>
+            
+            <div id="info-content" class="space-y-4">
+                <p>The <strong>MRT7 Rhythm Trainer</strong> is a visual and audible metronome designed to help practice rhythmic accuracy and timing, especially for tricky silent sections.</p>
+                
+                <h3 class="text-xl font-bold mt-6">Keyboard Controls</h3>
+                <ul class="list-disc list-inside space-y-1">
+                    <li><strong>Spacebar:</strong> Start or Stop the metronome.</li>
+                    <li><strong>Right Arrow (→):</strong> Increase Tempo by <strong>1 BPM</strong>.</li>
+                    <li><strong>Left Arrow (←):</strong> Decrease Tempo by <strong>1 BPM</strong>.</li>
+                    <li><strong>Up Arrow (↑):</strong> Increase Tempo by <strong>5 BPM</strong>.</li>
+                    <li><strong>Down Arrow (↓):</strong> Decrease Tempo by <strong>5 BPM</strong>.</li>
+                </ul>
+                
+                <h3 class="text-xl font-bold mt-6">Rhythm Grid & States</h3>
+                <p>Click on any square in the rhythm grid to cycle its state. The grid determines the subdivision and accent pattern. The colors are:</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li><strong class="text-primary-accent">Primary:</strong> Strongest accent/pitch. Used for downbeats or strong pulses.</li>
+                    <li><strong class="text-secondary-accent">Secondary:</strong> Medium accent/pitch.</li>
+                    <li><strong class="text-tertiary-accent">Tertiary:</strong> Weakest accent/pitch.</li>
+                    <li><strong class="text-off-accent">Off:</strong> Silent step.</li>
+                </ul>
+
+                <h3 class="text-xl font-bold mt-6">Bar Drop (Silent Bars)</h3>
+                <p>The "Bar Drop" feature allows you to practice against silent bars, forcing you to maintain tempo internally.</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li><strong>"0 BARS"</strong> means the pattern plays continuously.</li>
+                    <li><strong>"+1"</strong> increments the number of silent bars, up to 8.</li>
+                    <li>Example: If set to <strong>2 BARS</strong>, the metronome will play the pattern for 1 bar, then remain silent for 2 bars, repeating the cycle.</li>
+                </ul>
+                
+                <h3 class="text-xl font-bold mt-6">Count-In</h3>
+                <p>Click the <strong>Count-In</strong> button to toggle between 0, 1, or 2 bars of simple audible counting before the main pattern begins.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
