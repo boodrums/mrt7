@@ -17,9 +17,10 @@
     --main-font: 'IBM Plex Mono', monospace;
 }
 body {
-    /* CORE FIX: Set full viewport height and prevent scrolling */
-    height: 100vh;
-    overflow: hidden;
+    /* height: 100vh;  <-- REMOVE THIS */
+    /* overflow: hidden; <-- REMOVE THIS */
+    min-height: 100vh; /* Ensure it takes full height if content is short */
+    overflow-y: scroll; /* Allow vertical scrolling */
     
     font-family: var(--main-font);
     background-color: var(--dark-bg);
@@ -31,10 +32,6 @@ body {
     touch-action: manipulation; 
     font-size: 0.9rem; 
 }
-/* Ensure elements use the specified font */
-h1, h2, h3, button, input {
-    font-family: var(--main-font);
-}
 
 /* Style for the main metronome control card */
 #metronome-panel {
@@ -42,9 +39,13 @@ h1, h2, h3, button, input {
     color: var(--light-text);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     border: 1px solid #444;
-    /* Safety constraint: ensures the panel doesn't exceed viewport height if content is still too big */
-    max-height: 95vh;
-    overflow-y: auto; 
+    /* Fix 1: Remove scrolling constraints from the inner panel */
+    /* max-height: 95vh; <-- REMOVE THIS */
+    /* overflow-y: auto; <-- REMOVE THIS */
+    
+    /* Ensure consistent top/bottom padding now that it scrolls with the body */
+    padding-top: 1.5rem; 
+    padding-bottom: 1.5rem;
 }
 
 /* Adjust title to the new highlight color */
