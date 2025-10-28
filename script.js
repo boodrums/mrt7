@@ -100,11 +100,12 @@ const scheduleAheadTime = 0.1; // In seconds
 // 1. Worker content as a string (was the content of worker.js)
 const workerCode = `
     let timerID = null;
-    let interval = ${lookahead};
+    let interval = 25.0; // Default lookahead in ms
 
     self.onmessage = function(e) {
         if (e.data.interval) {
             interval = e.data.interval;
+            // If the timer is already running, restart it with the new interval
             if (timerID) {
                 clearInterval(timerID);
                 timerID = setInterval(function() {
@@ -364,6 +365,13 @@ function scheduleNote() {
     }
 }
 
+// NOTE: schedulerLoop is now triggered by the Web Worker message, not setInterval.
+// function schedulerLoop() { 
+//      if (isPlaying) {
+//         scheduleNote();
+//     }
+// }
+
 // --- Tempo/Pattern/Drop Functions ---
 
 function updateBpmDisplay() {
@@ -378,7 +386,7 @@ function adjustTempo(delta) {
     if (newTempo !== tempo) {
         tempo = newTempo;
         updateBpmDisplay();
-
+        
         // --- WEB WORKER UPDATE ---
         const secondsPerBeat = 60.0 / tempo;
         const secondsPerStep = secondsPerBeat / (currentMode / 4); 
@@ -420,7 +428,7 @@ function processManualInput() {
         const secondsPerStep = secondsPerBeat / (currentMode / 4); 
         const newLookahead = Math.floor(1000 * secondsPerStep);
         timerWorker.postMessage({ interval: newLookahead });
-
+        
         if (isPlaying && !isCountingIn) {
             statusMessage.textContent = `Tempo adjusted manually to ${tempo} BPM.`;
         }
@@ -747,8 +755,11 @@ function startMetronome() {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
 
+    // CRITICAL iOS FIX: Force resume on user interaction to guarantee audio plays.
     if (audioContext.state === 'suspended') {
-        audioContext.resume();
+        audioContext.resume().then(() => {
+            console.log('AudioContext successfully resumed on START.');
+        }).catch(e => console.error("Error during initial context resume:", e));
     }
 
     isPlaying = true;
@@ -780,7 +791,7 @@ function startMetronome() {
     
     updateCycleDisplay(); 
     
-    // --- WEB WORKER START (Replaces setInterval(schedulerLoop, lookahead)) ---
+    // --- WEB WORKER START (Use the Blob Worker) ---
     timerWorker.postMessage('start');
     // --- END WEB WORKER START ---
 }
@@ -899,13 +910,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (document.visibilityState === 'visible' && isPlaying) {
             requestWakeLock();
 
-            // --- iOS AUDIO CONTEXT RESUME FIX (Crucial for second load issue) ---
+            // iOS AUDIO CONTEXT RESUME FIX (Crucial for second load issue)
             if (audioContext && audioContext.state === 'suspended') { 
                 audioContext.resume().then(() => {
                     console.log('AudioContext resumed on visibility change.');
                 }).catch(e => console.error("Error resuming AudioContext:", e));
             }
-            // --- END FIX ---
         }
     });
 

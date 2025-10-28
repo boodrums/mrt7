@@ -16,16 +16,15 @@
     /* Font */
     --main-font: 'IBM Plex Mono', monospace;
 }
-/* --- FIX FOR SMOOTH SCROLLING --- */
+/* --- FIX FOR SMOOTH SCROLLING AND iOS STATUS BAR --- */
 body {
     /* CORE FIX: Remove fixed height and hidden overflow to allow native scrolling on the body */
-    /* Remove 'flex items-center justify-center' class from the <body> tag in index.html for this to work */
     min-height: 100vh;
     overflow-y: scroll; 
     display: block; /* Ensures natural flow from the top */
     
     font-family: var(--main-font);
-    background-color: var(--dark-bg);
+    background-color: var(--dark-bg); /* Ensure dark background is used */
     color: var(--light-text);
     transition: all 0.2s ease-in-out;
     -webkit-user-select: none;
@@ -33,8 +32,12 @@ body {
     user-select: none;
     touch-action: manipulation; 
     font-size: 0.9rem; 
+    
+    /* CRITICAL iOS STATUS BAR FIXES */
+    padding-top: env(safe-area-inset-top); 
+    padding-bottom: env(safe-area-inset-bottom);
 }
-/* --- END FIX FOR SMOOTH SCROLLING --- */
+/* --- END FIX FOR SMOOTH SCROLLING AND iOS STATUS BAR --- */
 /* Ensure elements use the specified font */
 h1, h2, h3, button, input {
     font-family: var(--main-font);
