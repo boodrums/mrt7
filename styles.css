@@ -312,3 +312,39 @@ input[type=range]::-moz-range-thumb {
 #drop-bar-display {
     color: var(--accent-2);
 }
+
+/* --- Count-In Button Default Style (Count: 0) --- */
+#count-in-btn {
+    /* Base dark color, similar to Clear/Default/Mode Inactive buttons */
+    background-color: var(--dark-inner); 
+    color: var(--subtle-text);
+    /* Set a transparent 2px border for size consistency */
+    border: 2px solid transparent; 
+}
+
+#count-in-btn:hover {
+    background-color: #444; /* Slightly lighter on hover */
+    color: var(--light-text);
+}
+
+/* --- Active/Engaged Count-In Button Style (Count: 1 or 2) --- */
+.count-in-active {
+    /* FULFILLS REQUEST: Background same as Default button (dark-inner) */
+    background-color: var(--dark-inner) !important; 
+    
+    /* Use primary accent for text and border for engagement feedback */
+    color: var(--accent-3) !important; 
+    border: 2px solid var(--accent-3) !important;
+    /* Add a subtle glow to make the engaged state pop */
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.5); 
+}
+
+.count-in-active:hover {
+    background-color: #444 !important; /* Slightly lighter dark background on hover */
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.7);
+}
+
+.count-in-active:active {
+    background-color: var(--dark-inner) !important;
+    box-shadow: none;
+}

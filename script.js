@@ -7,15 +7,16 @@ const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial
 
 const WAVEFORMS = ['sine', 'square', 'sawtooth', 'triangle'];
 
-// Default audio settings (used if nothing in localStorage)
-const DEFAULT_AUDIO_SETTINGS = {
+// NEW: This is the definitive, unchangeable source for the factory sounds.
+const FACTORY_DEFAULT_AUDIO_SETTINGS = {
     // UPDATED: Using CSS variables for clarity and consistency. 
-    // The 'color' key is used for the modal border. 'squareClass' links to the grid visuals.
     state3: { freq: 880, vol: 0.8, type: 'sine', color: 'var(--accent-3)', name: 'Primary (Teal-500)', squareClass: 'square-accent-3' }, 
     state2: { freq: 440, vol: 0.4, type: 'triangle', color: 'var(--accent-2)', name: 'Secondary (Lime-500)', squareClass: 'square-accent-2' }, 
     state1: { freq: 220, vol: 0.2, type: 'square', color: 'var(--accent-1)', name: 'Tertiary (Amber-400)', squareClass: 'square-accent-1' }
 };
-let audioSettings = DEFAULT_AUDIO_SETTINGS; // Will be populated by loadSettings
+
+// audioSettings starts with a deep copy of the factory defaults.
+let audioSettings = JSON.parse(JSON.stringify(FACTORY_DEFAULT_AUDIO_SETTINGS)); 
 
 let currentMode = 16; // Default to 16-step mode
 let GRID_SIZE = 16;
@@ -40,7 +41,7 @@ let tempo = 120; // BPM
 const MIN_BPM = 30;
 const MAX_BPM = 300;
 
-// Silent Bar State Variables (MODIFIED FOR SEPARATE PLAY/DROP)
+// Silent Bar State Variables
 let barsToPlay = 1; // N bars of rhythm
 let barsToDrop = 0; // N bars of silence
 let currentBarCycle = 0; // Current bar in the cycle (0 to barsToPlay + barsToDrop - 1)
@@ -53,7 +54,7 @@ let countInStep = 0; // Tracks 16th/12th notes during count-in
 // Wakelock Variable
 let wakeLock = null; 
 
-// Element references (MODIFIED BAR CONTROL REFERENCES)
+// Element references
 const tempoDisplayValue = document.getElementById('bpm-display-value');
 const bpmDisplayWrapper = document.getElementById('bpm-display-wrapper');
 const bpmManualInput = document.getElementById('bpm-manual-input');
@@ -81,8 +82,9 @@ const settingsBtn = document.getElementById('settings-btn');
 const settingsModal = document.getElementById('settings-modal');
 const closeModalBtn = document.getElementById('close-modal-btn');
 const settingsControls = document.getElementById('settings-controls');
+const factoryResetBtn = document.getElementById('factory-reset-btn');
 
-// New Info Modal elements
+// Info Modal elements
 const infoBtn = document.getElementById('info-btn');
 const infoModal = document.getElementById('info-modal');
 const closeInfoModalBtn = document.getElementById('close-info-modal-btn');
@@ -102,21 +104,23 @@ function loadSettings() {
         const storedSettings = localStorage.getItem('mrt7_audio_settings');
         if (storedSettings) {
             const loaded = JSON.parse(storedSettings);
-            // Merge loaded settings with defaults to ensure all keys are present
-            for (const key in DEFAULT_AUDIO_SETTINGS) {
+            // Merge loaded settings with factory defaults to ensure all keys are present
+            for (const key in FACTORY_DEFAULT_AUDIO_SETTINGS) {
                 if (loaded[key]) {
-                    // Ensure color and name remain consistent with the new theme
-                    audioSettings[key] = { ...DEFAULT_AUDIO_SETTINGS[key], ...loaded[key] };
+                    // Load user-saved settings
+                    audioSettings[key] = { ...FACTORY_DEFAULT_AUDIO_SETTINGS[key], ...loaded[key] };
                 } else {
-                    audioSettings[key] = DEFAULT_AUDIO_SETTINGS[key];
+                    // Use factory default if key is missing from loaded data
+                    audioSettings[key] = FACTORY_DEFAULT_AUDIO_SETTINGS[key];
                 }
             }
         } else {
-            audioSettings = DEFAULT_AUDIO_SETTINGS;
+            // Use factory defaults if nothing is in local storage
+            audioSettings = JSON.parse(JSON.stringify(FACTORY_DEFAULT_AUDIO_SETTINGS));
         }
     } catch (e) {
-        console.error("Error loading audio settings from localStorage, using defaults.", e);
-        audioSettings = DEFAULT_AUDIO_SETTINGS;
+        console.error("Error loading audio settings from localStorage, using factory defaults.", e);
+        audioSettings = JSON.parse(JSON.stringify(FACTORY_DEFAULT_AUDIO_SETTINGS));
     }
 }
 
@@ -133,6 +137,21 @@ function saveSettings() {
         console.error("Error saving audio settings to localStorage.", e);
     }
 }
+
+// Factory Reset Function
+function factoryResetSettings() {
+    // 1. Reset audioSettings to a fresh deep copy of the FACTORY_DEFAULT
+    audioSettings = JSON.parse(JSON.stringify(FACTORY_DEFAULT_AUDIO_SETTINGS));
+    
+    // 2. Clear the key from localStorage
+    localStorage.removeItem('mrt7_audio_settings');
+    
+    // 3. Re-render the modal to show the default values in the UI
+    renderSettingsModal();
+    
+    statusMessage.textContent = "Audio settings reset to factory defaults (Sine 880Hz, Triangle 440Hz, Square 220Hz).";
+}
+
 
 // --- Audio Generation Functions ---
 
@@ -199,7 +218,7 @@ function releaseWakeLock() {
     }
 }
 
-// --- Scheduling and Metronome Engine (MODIFIED LOGIC) ---
+// --- Scheduling and Metronome Engine ---
 
 function scheduleNote() {
     // Schedule all notes that fall within the lookahead window
@@ -306,7 +325,7 @@ function schedulerLoop() {
     }
 }
 
-// --- Tempo/Pattern/Drop Functions (MODIFIED BAR CONTROL LOGIC) ---
+// --- Tempo/Pattern/Drop Functions ---
 
 function updateBpmDisplay() {
     tempoDisplayValue.textContent = `${tempo} BPM`;
@@ -332,8 +351,7 @@ function handleManualInputDisplay() {
         bpmDisplayWrapper.classList.add('hidden');
         bpmManualInput.classList.remove('hidden');
         bpmManualInput.focus();
-        
-        // NEW: Select all text to allow for clean, immediate overwrite
+        // MODIFIED: Select all text to allow for clean, immediate overwrite
         bpmManualInput.select();
     }
 }
@@ -416,9 +434,21 @@ function resetDropBar() {
 
 function cycleCountIn() {
     countInBars = (countInBars + 1) % 3; // Cycles 0, 1, 2
-    countInBtn.textContent = `Count-In: ${countInBars}`;
+    
+    // 1. Update Text Content (Count: X)
+    countInBtn.textContent = `Count: ${countInBars}`; 
+    
+    // 2. Update Visual Style based on state
+    if (countInBars > 0) {
+        // Apply the accent style for Count: 1 or Count: 2
+        countInBtn.classList.add('count-in-active');
+    } else {
+        // Remove the accent style for Count: 0 (reverts to dark grey CSS)
+        countInBtn.classList.remove('count-in-active');
+    }
+    
     statusMessage.textContent = `Count-In set to ${countInBars} bar${countInBars !== 1 ? 's' : ''}.`;
-    // Ensure no playing state interference
+    
     if (isPlaying) { stopMetronome(); }
 }
 
@@ -532,7 +562,7 @@ function updateSilentVisuals(step) {
 function resetVisuals() {
     document.querySelectorAll('.is-playing, .is-silent-playing').forEach(el => el.classList.remove('is-playing', 'is-silent-playing'));
     currentStep = 0;
-    currentBarCycle = 0; // MODIFIED: Reset the new cycle counter
+    currentBarCycle = 0;
     isCountingIn = false;
     countInStep = 0;
 }
@@ -587,6 +617,7 @@ function renderSettingsModal() {
     const stateKeys = ['state3', 'state2', 'state1'];
     
     stateKeys.forEach(key => {
+        // Use the current audioSettings for rendering
         settingsControls.innerHTML += createSettingControl(key, audioSettings[key]);
     });
     
@@ -670,7 +701,7 @@ function startMetronome() {
     
     // Reset all counters
     currentStep = 0; 
-    currentBarCycle = 0; // MODIFIED: Use the new cycle counter
+    currentBarCycle = 0; 
     isCountingIn = false;
     countInStep = 0;
 
@@ -683,7 +714,7 @@ function startMetronome() {
         statusMessage.textContent = `Metronome running at ${tempo} BPM.`;
     }
     
-    updateCycleDisplay(); // MODIFIED: Use the new display function
+    updateCycleDisplay(); 
     
     timerWorker = setInterval(schedulerLoop, lookahead);
 }
@@ -711,7 +742,7 @@ function stopMetronome() {
 
 // --- Event Listeners and Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Load settings first
+    // Load settings first (will use local storage or factory defaults)
     loadSettings();
     
     // Setup Metronome controls
@@ -724,7 +755,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (clearBtn) clearBtn.addEventListener('click', clearPattern);
     if (defaultBtn) defaultBtn.addEventListener('click', defaultPattern);
     
-    // NEW BAR CONTROL LISTENERS
+    // BAR CONTROL LISTENERS
     if (playBarIncreaseBtn) playBarIncreaseBtn.addEventListener('click', increasePlayBar);
     if (playBarResetBtn) playBarResetBtn.addEventListener('click', resetPlayBar);
     if (dropBarIncreaseBtn) dropBarIncreaseBtn.addEventListener('click', increaseDropBar);
@@ -753,6 +784,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Close when clicking outside the modal content
         if (event.target === settingsModal) { hideSettingsModal(); }
     });
+    
+    // Factory Reset Listener
+    if (factoryResetBtn) factoryResetBtn.addEventListener('click', factoryResetSettings); 
     
     // Info Modal controls
     infoBtn.addEventListener('click', showInfoModal);
@@ -804,8 +838,10 @@ document.addEventListener('DOMContentLoaded', () => {
     updateModeButtons();
     createGrid();
     updateBpmDisplay(); 
-    updateCycleDisplay(); // MODIFIED: Call the new display function
-    countInBtn.textContent = `Count-In: ${countInBars}`;
+    updateCycleDisplay(); 
+    // Ensure the button displays 'Count: 0' on load and sets the correct class
+    countInBtn.textContent = `Count: ${countInBars}`; 
+    countInBtn.classList.remove('count-in-active'); // Ensure it starts in the dark grey state
     statusMessage.textContent = "Ready. Set your pattern and press START.";
 });
 
