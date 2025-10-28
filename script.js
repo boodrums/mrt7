@@ -79,7 +79,7 @@ const closeInfoModalBtn = document.getElementById('close-info-modal-btn');
 
 const MAX_BARS_TO_DROP = 8;
 
-let audioContext = null; // FIX: Initialize globally to null for clearer state
+let audioContext;
 let nextNoteTime = 0.0;
 const lookahead = 25.0; // In milliseconds
 const scheduleAheadTime = 0.1; // In seconds
@@ -392,17 +392,14 @@ function cycleCountIn() {
 function updateModeButtons() {
     document.querySelectorAll('.mode-btn').forEach(btn => {
         const mode = parseInt(btn.dataset.mode);
-        // FIX: Remove tailwind classes for the selected state to use custom styles from styles.css
         btn.classList.remove('bg-cyan-600', 'bg-gray-200', 'text-white', 'text-gray-700', 'hover:bg-cyan-500', 'hover:bg-gray-300');
         
-        // Use the custom class 'mode-selected' which is styled in styles.css
-        btn.classList.remove('mode-selected');
-
         if (mode === currentMode) {
-             btn.classList.add('mode-selected');
+            // Selected state: Cyan background, white text
+            btn.classList.add('bg-cyan-600', 'text-white', 'hover:bg-cyan-500');
         } else {
-            // Re-apply base button style if not selected
-            // (Note: Styles are handled primarily by styles.css now)
+            // Unselected state: Light gray background, dark text
+            btn.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
         }
     });
 }
@@ -516,24 +513,24 @@ function createSettingControl(stateKey, settings) {
 
     return `
         <div class="p-4 rounded-lg bg-gray-100 border-l-4 border-${color.replace('-600', '-500')}">
-            <h3 class="text-lg font-semibold mb-3">${name}</h3> 
+            <h3 class="text-lg font-semibold text-gray-800 mb-3">${name}</h3>
 
             <div class="mb-4">
-                <label for="${stateKey}-freq" class="block text-sm font-medium">Pitch (Frequency): <span id="${stateKey}-freq-val">${freq} Hz</span></label>
+                <label for="${stateKey}-freq" class="block text-sm font-medium text-gray-700">Pitch (Frequency): <span id="${stateKey}-freq-val">${freq} Hz</span></label>
                 <input type="range" id="${stateKey}-freq" data-setting="freq" data-key="${stateKey}" 
                        min="50" max="1500" step="10" value="${freq}" 
                        class="w-full h-2 rounded-lg appearance-none cursor-pointer mt-1">
             </div>
 
             <div class="mb-4">
-                <label for="${stateKey}-vol" class="block text-sm font-medium">Volume: <span id="${stateKey}-vol-val">${(vol * 100).toFixed(0)}%</span></label>
+                <label for="${stateKey}-vol" class="block text-sm font-medium text-gray-700">Volume: <span id="${stateKey}-vol-val">${(vol * 100).toFixed(0)}%</span></label>
                 <input type="range" id="${stateKey}-vol" data-setting="vol" data-key="${stateKey}" 
                        min="0.01" max="1.0" step="0.01" value="${vol}" 
                        class="w-full h-2 rounded-lg appearance-none cursor-pointer mt-1">
             </div>
 
             <div>
-                <label for="${stateKey}-type" class="block text-sm font-medium">Timbre (Waveform):</label>
+                <label for="${stateKey}-type" class="block text-sm font-medium text-gray-700">Timbre (Waveform):</label>
                 <select id="${stateKey}-type" data-setting="type" data-key="${stateKey}"
                         class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm rounded-md bg-white text-gray-800">
                     ${waveformOptions}
@@ -604,41 +601,20 @@ function hideInfoModal() {
     infoModal.classList.add('hidden');
 }
 
-// --- NEW FUNCTION: Audio Context Activation Fix for Mobile ---
-/**
- * Initializes and attempts to resume the AudioContext on the first user interaction.
- * This is crucial for mobile browsers (especially iOS) which require a user gesture
- * to fully activate Web Audio API and avoid playback issues (e.g., sound differences).
- */
-function initAudioContext() {
-    // 1. Create the context only once
-    if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        console.log('AudioContext created.');
-    }
-    
-    // 2. Always attempt to resume if suspended (iOS/Safari common requirement)
-    if (audioContext.state === 'suspended') {
-        audioContext.resume().then(() => {
-            console.log('AudioContext resumed successfully.');
-        }).catch(err => {
-            console.error('Failed to resume AudioContext:', err);
-        });
-    }
-    
-    // 3. Remove the listeners after the first interaction check
-    document.removeEventListener('click', initAudioContext);
-    document.removeEventListener('touchend', initAudioContext);
-}
 
 // --- Main Control Logic ---
 
 function startMetronome() {
     if (isPlaying) return;
 
-    // FIX: Ensure AudioContext is active on iOS/Safari
-    initAudioContext();
-    
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+
     isPlaying = true;
     startStopBtn.textContent = 'STOP'; 
     // Change from Cyan START to Green STOP
@@ -739,10 +715,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Close when clicking outside the modal content
         if (event.target === infoModal) { hideInfoModal(); }
     });
-
-    // FIX: Add listeners for first touch/click to initialize audio context
-    document.addEventListener('click', initAudioContext);
-    document.addEventListener('touchend', initAudioContext);
 
     // Global Spacebar and Arrow Key listeners
     document.addEventListener('keydown', (event) => {
