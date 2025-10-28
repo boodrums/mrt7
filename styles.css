@@ -258,3 +258,57 @@ input[type=range]::-moz-range-thumb {
 .text-secondary-accent { color: var(--accent-2); }
 .text-tertiary-accent { color: var(--accent-1); }
 .text-off-accent { color: var(--subtle-text); }
+
+/* --- RHYTHM CYCLE BUTTON STYLING --- */
+
+/* --- Primary Accent Buttons (Increase Play Bars) --- */
+#play-bar-increase-btn {
+    /* Teal/Emerald Background (Primary Accent) */
+    background-color: var(--accent-3);
+    color: var(--dark-bg); /* Use dark text for contrast on bright background */
+}
+#play-bar-increase-btn:hover {
+    filter: brightness(1.1);
+}
+#play-bar-increase-btn:active {
+    filter: brightness(0.9);
+}
+
+/* --- Secondary Accent Buttons (Increase Silent Bars) --- */
+#drop-bar-increase-btn {
+    /* Lime Background (Secondary Accent) */
+    background-color: var(--accent-2);
+    color: var(--dark-bg); /* Use dark text for contrast on bright background */
+}
+#drop-bar-increase-btn:hover {
+    filter: brightness(1.1);
+}
+#drop-bar-increase-btn:active {
+    filter: brightness(0.9);
+}
+
+/* --- Reset Buttons (Subdued/Secondary Action) --- */
+#play-bar-reset-btn,
+#drop-bar-reset-btn {
+    /* Darker, Subdued Background */
+    background-color: var(--dark-inner); 
+    color: var(--subtle-text);
+    border: 1px solid #444; /* Subtle border for definition */
+}
+#play-bar-reset-btn:hover,
+#drop-bar-reset-btn:hover {
+    background-color: #444; /* Slightly lighter on hover */
+    color: var(--light-text);
+}
+
+/* --- Display Text Colors --- */
+
+/* Play Bar Count (Primary Accent) */
+#play-bar-display {
+    color: var(--accent-3); 
+}
+
+/* Silent Bar Count (Secondary Accent) */
+#drop-bar-display {
+    color: var(--accent-2);
+}

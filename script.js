@@ -40,9 +40,10 @@ let tempo = 120; // BPM
 const MIN_BPM = 30;
 const MAX_BPM = 300;
 
-// Silent Bar State Variables
-let barsToDrop = 0; // N bars to drop
-let currentBar = 0; // Current bar in the drop cycle (0 = played, > 0 = dropped)
+// Silent Bar State Variables (MODIFIED FOR SEPARATE PLAY/DROP)
+let barsToPlay = 1; // N bars of rhythm
+let barsToDrop = 0; // N bars of silence
+let currentBarCycle = 0; // Current bar in the cycle (0 to barsToPlay + barsToDrop - 1)
 
 // Count-In State Variables
 let countInBars = 0; // 0, 1, or 2
@@ -52,7 +53,7 @@ let countInStep = 0; // Tracks 16th/12th notes during count-in
 // Wakelock Variable
 let wakeLock = null; 
 
-// Element references
+// Element references (MODIFIED BAR CONTROL REFERENCES)
 const tempoDisplayValue = document.getElementById('bpm-display-value');
 const bpmDisplayWrapper = document.getElementById('bpm-display-wrapper');
 const bpmManualInput = document.getElementById('bpm-manual-input');
@@ -62,9 +63,17 @@ const statusMessage = document.getElementById('status-message');
 const tempoControls = document.getElementById('tempo-controls');
 const clearBtn = document.getElementById('clear-btn');
 const defaultBtn = document.getElementById('default-btn');
-const barDropIncreaseBtn = document.getElementById('bar-drop-increase-btn');
-const barDropResetBtn = document.getElementById('bar-drop-reset-btn');
-const barDropDisplay = document.getElementById('bar-drop-display');
+
+// New Bar Control Elements
+const playBarIncreaseBtn = document.getElementById('play-bar-increase-btn');
+const playBarResetBtn = document.getElementById('play-bar-reset-btn');
+const playBarDisplay = document.getElementById('play-bar-display');
+const dropBarIncreaseBtn = document.getElementById('drop-bar-increase-btn');
+const dropBarResetBtn = document.getElementById('drop-bar-reset-btn');
+const dropBarDisplay = document.getElementById('drop-bar-display');
+const cycleSummaryPlay = document.getElementById('cycle-summary-play');
+const cycleSummaryDrop = document.getElementById('cycle-summary-drop');
+
 const countInBtn = document.getElementById('count-in-btn');
 const mode16Btn = document.getElementById('mode-16-btn');
 const mode12Btn = document.getElementById('mode-12-btn');
@@ -78,7 +87,7 @@ const infoBtn = document.getElementById('info-btn');
 const infoModal = document.getElementById('info-modal');
 const closeInfoModalBtn = document.getElementById('close-info-modal-btn');
 
-const MAX_BARS_TO_DROP = 8;
+const MAX_BARS_TO_CYCLE = 8; // Max bars for either play or silent
 
 let audioContext;
 let nextNoteTime = 0.0;
@@ -190,7 +199,7 @@ function releaseWakeLock() {
     }
 }
 
-// --- Scheduling and Metronome Engine ---
+// --- Scheduling and Metronome Engine (MODIFIED LOGIC) ---
 
 function scheduleNote() {
     // Schedule all notes that fall within the lookahead window
@@ -241,16 +250,18 @@ function scheduleNote() {
             if (countInStep === totalSteps) {
                 isCountingIn = false;
                 currentStep = 0; // Start the main pattern from step 0
-                currentBar = 0; // Reset bar drop counter
+                currentBarCycle = 0; // Reset bar drop counter
                 statusMessage.textContent = `Pattern START. Metronome running at ${tempo} BPM.`;
             }
             
         } else {
             // --- MAIN RHYTHM GRID MODE ---
-            const isBarDropped = currentBar !== 0; 
+            const totalCycleLength = barsToPlay + barsToDrop;
+            // The rhythm is dropped (silent) if the current bar in the cycle is >= barsToPlay
+            const isBarDropped = totalCycleLength > 0 && currentBarCycle >= barsToPlay;
             const stepState = pattern[currentStep];
 
-            if (!isBarDropped) {
+            if (!isBarDropped) { // This is the "Play" phase
                 // Play sound based on pattern state
                 if (stepState === 3) {
                     playSound(time, audioSettings.state3);
@@ -263,7 +274,7 @@ function scheduleNote() {
                 // Normal visuals
                 setTimeout(() => updateVisuals(currentStep), (time - audioContext.currentTime) * 1000);
 
-            } else {
+            } else { // This is the "Silent" (Dropped) phase
                 // Silent visuals (no sound)
                 setTimeout(() => updateSilentVisuals(currentStep), (time - audioContext.currentTime) * 1000);
             }
@@ -272,8 +283,8 @@ function scheduleNote() {
             previousStep = currentStep;
             currentStep = (currentStep + 1) % GRID_SIZE;
             if (previousStep === GRID_SIZE - 1) {
-                // Bar ended, advance silent bar counter
-                currentBar = (currentBar + 1) % (barsToDrop + 1);
+                // Bar ended, advance silent/play bar counter
+                currentBarCycle = (currentBarCycle + 1) % totalCycleLength;
             }
         }
 
@@ -295,7 +306,7 @@ function schedulerLoop() {
     }
 }
 
-// --- Tempo/Pattern/Drop Functions (Unchanged) ---
+// --- Tempo/Pattern/Drop Functions (MODIFIED BAR CONTROL LOGIC) ---
 
 function updateBpmDisplay() {
     tempoDisplayValue.textContent = `${tempo} BPM`;
@@ -321,6 +332,9 @@ function handleManualInputDisplay() {
         bpmDisplayWrapper.classList.add('hidden');
         bpmManualInput.classList.remove('hidden');
         bpmManualInput.focus();
+        
+        // NEW: Select all text to allow for clean, immediate overwrite
+        bpmManualInput.select();
     }
 }
 
@@ -356,11 +370,15 @@ function defaultPattern() {
     statusMessage.textContent = `Pattern reset to Default ${currentMode}-step.`;
 }
 
-function updateBarDropDisplay() {
-    const barText = barsToDrop === 1 ? 'BAR' : 'BARS';
-    barDropDisplay.textContent = `${barsToDrop} ${barText}`;
+function updateCycleDisplay() {
+    playBarDisplay.textContent = `${barsToPlay} BAR${barsToPlay !== 1 ? 'S' : ''}`;
+    dropBarDisplay.textContent = `${barsToDrop} SILENT`;
+    cycleSummaryPlay.textContent = barsToPlay;
+    cycleSummaryDrop.textContent = barsToDrop;
+    
+    // Status message update based on the cycle
     if (barsToDrop > 0) {
-        statusMessage.textContent = `Rhythm Drop set: Play 1 bar, then silence for ${barsToDrop} bar${barsToDrop > 1 ? 's' : ''}.`;
+        statusMessage.textContent = `Rhythm Cycle set: Play ${barsToPlay} bar${barsToPlay > 1 ? 's' : ''}, then silence for ${barsToDrop} bar${barsToDrop > 1 ? 's' : ''}.`;
     } else if (isPlaying && !isCountingIn) {
          statusMessage.textContent = `Metronome running at ${tempo} BPM.`;
     } else if (!isPlaying) {
@@ -368,18 +386,32 @@ function updateBarDropDisplay() {
     }
 }
 
-function increaseBarDrop() {
-    if (barsToDrop < MAX_BARS_TO_DROP) {
-        barsToDrop++;
-        currentBar = 0;
-        updateBarDropDisplay();
+function increasePlayBar() {
+    if (barsToPlay < MAX_BARS_TO_CYCLE) {
+        barsToPlay++;
+        currentBarCycle = 0; // Reset cycle on change
+        updateCycleDisplay();
     }
 }
 
-function resetBarDrop() {
-    barsToDrop = 0;
-    currentBar = 0;
-    updateBarDropDisplay();
+function resetPlayBar() {
+    barsToPlay = 1; // Default is 1 bar played
+    currentBarCycle = 0;
+    updateCycleDisplay();
+}
+
+function increaseDropBar() {
+    if (barsToDrop < MAX_BARS_TO_CYCLE) {
+        barsToDrop++;
+        currentBarCycle = 0; // Reset cycle on change
+        updateCycleDisplay();
+    }
+}
+
+function resetDropBar() {
+    barsToDrop = 0; // Default is 0 bars dropped
+    currentBarCycle = 0;
+    updateCycleDisplay();
 }
 
 function cycleCountIn() {
@@ -500,7 +532,7 @@ function updateSilentVisuals(step) {
 function resetVisuals() {
     document.querySelectorAll('.is-playing, .is-silent-playing').forEach(el => el.classList.remove('is-playing', 'is-silent-playing'));
     currentStep = 0;
-    currentBar = 0; 
+    currentBarCycle = 0; // MODIFIED: Reset the new cycle counter
     isCountingIn = false;
     countInStep = 0;
 }
@@ -638,7 +670,7 @@ function startMetronome() {
     
     // Reset all counters
     currentStep = 0; 
-    currentBar = 0; 
+    currentBarCycle = 0; // MODIFIED: Use the new cycle counter
     isCountingIn = false;
     countInStep = 0;
 
@@ -651,7 +683,7 @@ function startMetronome() {
         statusMessage.textContent = `Metronome running at ${tempo} BPM.`;
     }
     
-    updateBarDropDisplay();
+    updateCycleDisplay(); // MODIFIED: Use the new display function
     
     timerWorker = setInterval(schedulerLoop, lookahead);
 }
@@ -691,8 +723,13 @@ document.addEventListener('DOMContentLoaded', () => {
     mode12Btn.addEventListener('click', () => updateMode(12));
     if (clearBtn) clearBtn.addEventListener('click', clearPattern);
     if (defaultBtn) defaultBtn.addEventListener('click', defaultPattern);
-    if (barDropIncreaseBtn) barDropIncreaseBtn.addEventListener('click', increaseBarDrop);
-    if (barDropResetBtn) barDropResetBtn.addEventListener('click', resetBarDrop);
+    
+    // NEW BAR CONTROL LISTENERS
+    if (playBarIncreaseBtn) playBarIncreaseBtn.addEventListener('click', increasePlayBar);
+    if (playBarResetBtn) playBarResetBtn.addEventListener('click', resetPlayBar);
+    if (dropBarIncreaseBtn) dropBarIncreaseBtn.addEventListener('click', increaseDropBar);
+    if (dropBarResetBtn) dropBarResetBtn.addEventListener('click', resetDropBar);
+
 
     // BPM input controls
     bpmDisplayWrapper.addEventListener('click', handleManualInputDisplay);
@@ -767,7 +804,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateModeButtons();
     createGrid();
     updateBpmDisplay(); 
-    updateBarDropDisplay(); 
+    updateCycleDisplay(); // MODIFIED: Call the new display function
     countInBtn.textContent = `Count-In: ${countInBars}`;
     statusMessage.textContent = "Ready. Set your pattern and press START.";
 });

@@ -14,7 +14,7 @@
 
     <div id="metronome-panel" class="w-full max-w-lg lg:max-w-4xl p-4 sm:p-6 rounded-xl">
         
-        <h1 class="text-2xl font-bold mb-4">MRT7 Rhythm Trainer</h1>
+        <h1 class="text-xl font-normal mb-4 text-gray-400">MRT7 Rhythm Trainer</h1>
         
         <div class="lg:grid lg:grid-cols-2 lg:gap-6">
             
@@ -26,8 +26,8 @@
                         <div id="bpm-display-wrapper" class="cursor-pointer p-1 rounded-lg transition duration-150">
                             <span id="bpm-display-value" class="text-5xl sm:text-6xl font-extrabold">120 BPM</span>
                         </div>
-                        <input id="bpm-manual-input" type="number" min="30" max="300" value="120"
-                               class="hidden w-40 text-5xl sm:text-6xl font-extrabold text-center rounded-md p-1 border-2 transition duration-150">
+                        <input id="bpm-manual-input" type="text" min="30" max="300" value="120"
+       class="hidden w-40 text-5xl sm:text-6xl font-extrabold text-center rounded-md p-1 border-2 transition duration-150">
                     </div>
 
                     <div id="tempo-controls" class="grid grid-cols-6 gap-2 mt-4">
@@ -75,19 +75,43 @@
             <div id="col-right" class="space-y-4 lg:pt-0">
                 
                 <div class="p-3 rounded-lg inner-panel-section">
-                    <div class="flex items-center justify-between space-x-4">
-                        <button id="bar-drop-reset-btn" class="py-1 px-3 font-bold rounded-lg transition duration-150 text-sm shadow-sm">
-                            Reset (0)
-                        </button>
-                        <div id="bar-drop-display" class="text-2xl font-extrabold">
-                            0 BARS
+                    <h3 class="text-lg font-semibold mb-3 text-center" style="color: var(--accent-3);">Rhythm Cycle Settings</h3>
+                    
+                    <div class="grid grid-cols-2 gap-4 border-b pb-3 mb-3 border-gray-600">
+                        <div class="text-center">
+                            <div id="play-bar-display" class="text-2xl font-extrabold mb-1">
+                                1 BAR
+                            </div>
+                            <p class="text-sm font-medium text-gray-400">Play Bars</p>
+                            <div class="flex justify-center space-x-2 mt-2">
+                                <button id="play-bar-reset-btn" class="py-1 px-3 font-bold rounded-lg transition duration-150 text-sm shadow-sm w-1/2">
+                                    Reset (1)
+                                </button>
+                                <button id="play-bar-increase-btn" class="py-1 px-3 font-bold rounded-lg transition duration-150 text-sm shadow-md w-1/2">
+                                    +1 Bar
+                                </button>
+                            </div>
                         </div>
-                        <button id="bar-drop-increase-btn" class="py-1 px-3 font-bold rounded-lg transition duration-150 text-sm shadow-md">
-                            +1 Bar Drop
-                        </button>
+                        <div class="text-center">
+                            <div id="drop-bar-display" class="text-2xl font-extrabold mb-1">
+                                0 SILENT
+                            </div>
+                            <p class="text-sm font-medium text-gray-400">Silent Bars</p>
+                            <div class="flex justify-center space-x-2 mt-2">
+                                <button id="drop-bar-reset-btn" class="py-1 px-3 font-bold rounded-lg transition duration-150 text-sm shadow-sm w-1/2">
+                                    Reset (0)
+                                </button>
+                                <button id="drop-bar-increase-btn" class="py-1 px-3 font-bold rounded-lg transition duration-150 text-sm shadow-md w-1/2">
+                                    +1 Bar
+                                </button>
+                            </div>
+                        </div>
                     </div>
+                    
+                    <p class="text-xs text-center text-gray-400 mt-2">
+                        Cycle: Play <span id="cycle-summary-play">1</span> Bar(s) then Silent for <span id="cycle-summary-drop">0</span> Bar(s).
+                    </p>
                 </div>
-
                 <div class="text-sm pt-2">
                     
                     <div class="flex justify-between items-center p-3 rounded-lg border">
@@ -146,12 +170,10 @@
                     <li><strong class="text-off-accent">Off:</strong> Silent step.</li>
                 </ul>
 
-                <h3 class="text-xl font-bold mt-6">Bar Drop (Silent Bars)</h3>
-                <p>The "Bar Drop" feature allows you to practice against silent bars, forcing you to maintain tempo internally.</p>
+                <h3 class="text-xl font-bold mt-6">Bar Cycle (Play/Silent Bars)</h3>
+                <p>The cycle feature allows you to practice against silent bars, forcing you to maintain tempo internally. You set the number of **Play Bars** (rhythm is audible) and **Silent Bars** (rhythm is muted).</p>
                 <ul class="list-disc list-inside space-y-1">
-                    <li><strong>"0 BARS"</strong> means the pattern plays continuously.</li>
-                    <li><strong>"+1"</strong> increments the number of silent bars, up to 8.</li>
-                    <li>Example: If set to <strong>2 BARS</strong>, the metronome will play the pattern for 1 bar, then remain silent for 2 bars, repeating the cycle.</li>
+                    <li>Example: If set to **Play 1 Bar** and **Silent 2 Bars**, the metronome will play the pattern for 1 bar, then remain silent for 2 bars, repeating the cycle.</li>
                 </ul>
                 
                 <h3 class="text-xl font-bold mt-6">Count-In</h3>
