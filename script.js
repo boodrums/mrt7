@@ -7,9 +7,8 @@ const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial
 
 const WAVEFORMS = ['sine', 'square', 'sawtooth', 'triangle'];
 
-// NEW: This is the definitive, unchangeable source for the factory sounds.
+// This is the definitive, unchangeable source for the factory sounds.
 const FACTORY_DEFAULT_AUDIO_SETTINGS = {
-    // UPDATED: Using CSS variables for clarity and consistency. 
     state3: { freq: 880, vol: 0.8, type: 'sine', color: 'var(--accent-3)', name: 'Primary (Teal-500)', squareClass: 'square-accent-3' }, 
     state2: { freq: 440, vol: 0.4, type: 'triangle', color: 'var(--accent-2)', name: 'Secondary (Lime-500)', squareClass: 'square-accent-2' }, 
     state1: { freq: 220, vol: 0.2, type: 'square', color: 'var(--accent-1)', name: 'Tertiary (Amber-400)', squareClass: 'square-accent-1' }
@@ -95,7 +94,56 @@ let audioContext;
 let nextNoteTime = 0.0;
 const lookahead = 25.0; // In milliseconds
 const scheduleAheadTime = 0.1; // In seconds
-let timerWorker = null;
+
+// --- WEB WORKER IMPLEMENTATION (FIX FOR THROTTLING) ---
+
+// 1. Worker content as a string (was the content of worker.js)
+const workerCode = `
+    let timerID = null;
+    let interval = ${lookahead};
+
+    self.onmessage = function(e) {
+        if (e.data.interval) {
+            interval = e.data.interval;
+            if (timerID) {
+                clearInterval(timerID);
+                timerID = setInterval(function() {
+                    postMessage('schedule');
+                }, interval);
+            }
+        } else if (e.data === 'start') {
+            if (!timerID) {
+                timerID = setInterval(function() {
+                    postMessage('schedule');
+                }, interval);
+            }
+        } else if (e.data === 'stop') {
+            clearInterval(timerID);
+            timerID = null;
+        }
+    }
+`;
+
+// 2. Create a Blob and a URL from the code string
+const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
+const workerUrl = URL.createObjectURL(workerBlob);
+
+// 3. Initialize the Web Worker using the generated URL
+let timerWorker = new Worker(workerUrl);
+
+// 4. Listener for messages from the worker
+timerWorker.onmessage = function(e) {
+    if (e.data === 'schedule' && isPlaying) {
+        // This executes the note scheduling logic in the main thread
+        scheduleNote(); 
+    }
+};
+
+// Send the initial 'lookahead' value to the worker so it knows the interval
+timerWorker.postMessage({ interval: lookahead }); 
+
+// --- END WEB WORKER IMPLEMENTATION ---
+
 
 // --- Settings Management (Local Storage) ---
 
@@ -316,15 +364,6 @@ function scheduleNote() {
     }
 }
 
-/**
- * The main loop that runs on an interval to check if notes need scheduling.
- */
-function schedulerLoop() {
-     if (isPlaying) {
-        scheduleNote();
-    }
-}
-
 // --- Tempo/Pattern/Drop Functions ---
 
 function updateBpmDisplay() {
@@ -339,6 +378,16 @@ function adjustTempo(delta) {
     if (newTempo !== tempo) {
         tempo = newTempo;
         updateBpmDisplay();
+
+        // --- WEB WORKER UPDATE ---
+        const secondsPerBeat = 60.0 / tempo;
+        const secondsPerStep = secondsPerBeat / (currentMode / 4); 
+        // lookahead is calculated based on step time (in ms)
+        const newLookahead = Math.floor(1000 * secondsPerStep);
+
+        // Send the updated lookahead value to the worker
+        timerWorker.postMessage({ interval: newLookahead });
+        // --- END WEB WORKER UPDATE ---
         
         if (isPlaying && !isCountingIn) {
             statusMessage.textContent = `Tempo adjusted to ${tempo} BPM.`;
@@ -365,6 +414,13 @@ function processManualInput() {
     if (newTempo !== tempo) {
         tempo = newTempo;
         updateBpmDisplay();
+        
+        // Ensure worker interval is updated after manual tempo change
+        const secondsPerBeat = 60.0 / tempo;
+        const secondsPerStep = secondsPerBeat / (currentMode / 4); 
+        const newLookahead = Math.floor(1000 * secondsPerStep);
+        timerWorker.postMessage({ interval: newLookahead });
+
         if (isPlaying && !isCountingIn) {
             statusMessage.textContent = `Tempo adjusted manually to ${tempo} BPM.`;
         }
@@ -480,6 +536,14 @@ function updateMode(newMode) {
     GRID_SIZE = newMode;
     pattern = getDefaultPattern(currentMode);
     
+    // --- WORKER UPDATE ON MODE CHANGE ---
+    // Recalculate lookahead based on new subdivision
+    const secondsPerBeat = 60.0 / tempo;
+    const secondsPerStep = secondsPerBeat / (currentMode / 4); 
+    const newLookahead = Math.floor(1000 * secondsPerStep);
+    timerWorker.postMessage({ interval: newLookahead });
+    // --- END WORKER UPDATE ---
+
     createGrid(); // Re-render the grid
     updateModeButtons();
     statusMessage.textContent = `Mode set to ${currentMode}-Step Pattern. Ready to play.`;
@@ -716,7 +780,9 @@ function startMetronome() {
     
     updateCycleDisplay(); 
     
-    timerWorker = setInterval(schedulerLoop, lookahead);
+    // --- WEB WORKER START (Replaces setInterval(schedulerLoop, lookahead)) ---
+    timerWorker.postMessage('start');
+    // --- END WEB WORKER START ---
 }
 
 function stopMetronome() {
@@ -731,10 +797,11 @@ function stopMetronome() {
     // --- RELEASE WAKE LOCK ---
     releaseWakeLock();
 
+    // --- WEB WORKER STOP (Replaces clearInterval(timerWorker)) ---
     if (timerWorker) {
-        clearInterval(timerWorker);
-        timerWorker = null;
+        timerWorker.postMessage('stop');
     }
+    // --- END WEB WORKER STOP ---
     
     resetVisuals();
     statusMessage.textContent = "Metronome stopped.";
@@ -831,6 +898,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible' && isPlaying) {
             requestWakeLock();
+
+            // --- iOS AUDIO CONTEXT RESUME FIX (Crucial for second load issue) ---
+            if (audioContext && audioContext.state === 'suspended') { 
+                audioContext.resume().then(() => {
+                    console.log('AudioContext resumed on visibility change.');
+                }).catch(e => console.error("Error resuming AudioContext:", e));
+            }
+            // --- END FIX ---
         }
     });
 
