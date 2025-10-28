@@ -46,22 +46,19 @@ h1, h2, h3, button, input {
     color: var(--light-text);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     border: 1px solid #444;
-    /* --- FIX FOR SMOOTH SCROLLING --- */
-    /* Remove max-height and overflow-y to prevent inner scrollbars */
-    /* max-height: 95vh;  <-- REMOVED */
-    /* overflow-y: auto; <-- REMOVED */
-    /* Ensure content has top/bottom padding when scrolling with the body */
     padding-top: 1.5rem; 
     padding-bottom: 1.5rem;
     margin-left: auto;
     margin-right: auto;
-    /* --- END FIX FOR SMOOTH SCROLLING --- */
 }
 
 /* Adjust title to the new highlight color */
 #metronome-panel h1 {
     color: var(--main-highlight);
 }
+
+/* --- REMOVED: NEW FIX: Force transparency for the placeholder H1 as the placeholder was removed. --- */
+
 
 /* --- FIX: New selector for inner recessed sections (BPM area, Grid, Bar Drop area) --- */
 .inner-panel-section { 
@@ -70,12 +67,6 @@ h1, h2, h3, button, input {
     border: 1px solid #444;
 }
 /* --- END FIX --- */
-
-/* --- NEW FIX: Force transparency for the placeholder H1 to override the general H1 style --- */
-.h1-placeholder {
-    color: transparent !important; 
-}
-/* --- END NEW FIX --- */
 
 /* BPM Display Value */
 #bpm-display-value, 
@@ -119,7 +110,7 @@ h1, h2, h3, button, input {
 
 /* Accent Buttons: Default Pattern, +1 Bar Drop, Count-In (using the main highlight) */
 #default-btn, #bar-drop-increase-btn, #count-in-btn {
-    background-color: var(--main-highlight);
+    background-color: var(--main-highlight); /* Uses Teal-700 highlight */
     color: var(--dark-bg);
 }
 #default-btn:hover, #bar-drop-increase-btn:hover, #count-in-btn:hover {
@@ -142,7 +133,6 @@ h1, h2, h3, button, input {
 }
 
 /* Mode Selection Buttons SELECTED state (Subtle highlight) */
-/* --- FIX: Target the custom class 'mode-selected' instead of old Tailwind placeholders --- */
 .mode-btn.mode-selected { 
     background-color: var(--main-highlight) !important;
     color: var(--dark-bg) !important;
@@ -193,9 +183,6 @@ h1, h2, h3, button, input {
 #status-message {
     color: var(--accent-3); 
     font-size: 0.8rem;
-}
-.text-xs.text-center.mb-2.font-mono {
-    color: var(--subtle-text);
 }
 
 /* Modal Styling */

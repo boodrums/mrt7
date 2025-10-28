@@ -14,13 +14,11 @@
 
     <div id="metronome-panel" class="w-full max-w-lg lg:max-w-4xl p-4 sm:p-6 rounded-xl">
         
-        <h1 class="text-3xl sm:text-4xl font-extrabold mb-5 text-center tracking-wider lg:hidden">MRT7 Rhythm Trainer</h1>
+        <h1 class="text-2xl font-bold mb-4">MRT7 Rhythm Trainer</h1>
         
         <div class="lg:grid lg:grid-cols-2 lg:gap-6">
             
             <div id="col-left" class="mb-6 lg:mb-0">
-                
-                <h1 class="text-3xl sm:text-4xl font-extrabold mb-5 tracking-wider hidden lg:block">MRT7 Rhythm Trainer</h1>
                 
                 <div class="mb-5 p-3 rounded-lg inner-panel-section">
                     
@@ -42,16 +40,7 @@
                     </div>
                 </div>
 
-                <div id="rhythm-grid" class="grid gap-2 aspect-square p-2 rounded-lg shadow-inner inner-panel-section">
-                    </div>
-                
-            </div>
-
-            <div id="col-right" class="space-y-4 lg:pt-0">
-                
-                <h1 class="text-3xl sm:text-4xl font-extrabold mb-5 tracking-wider hidden lg:block h1-placeholder pointer-events-none select-none">MRT7 Rhythm Trainer</h1>
-
-                <div class="flex space-x-2 sm:space-x-4">
+                <div class="mb-4 flex space-x-2 sm:space-x-4">
                     <button id="count-in-btn" class="flex-shrink-0 w-1/4 px-2 py-2 text-xs sm:text-sm font-bold rounded-xl shadow-lg transition duration-200">
                         Count-In: 0
                     </button>
@@ -63,23 +52,27 @@
                     </button>
                 </div>
                 
-                <div class="flex justify-center space-x-4">
-                    <button id="mode-16-btn" data-mode="16" class="mode-btn w-1/2 py-2 text-sm font-bold rounded-lg transition duration-150 shadow-md">
+                <div id="rhythm-grid" class="grid gap-2 aspect-square p-2 rounded-lg shadow-inner inner-panel-section mb-4">
+                    </div>
+                
+                <div class="mb-4 grid grid-cols-4 gap-2">
+                    <button id="mode-16-btn" data-mode="16" class="mode-btn col-span-1 py-2 text-sm font-bold rounded-lg transition duration-150 shadow-md">
                         16-Step
                     </button>
-                    <button id="mode-12-btn" data-mode="12" class="mode-btn mode-12-btn w-1/2 py-2 text-sm font-bold rounded-lg transition duration-150 shadow-md">
+                    <button id="mode-12-btn" data-mode="12" class="mode-btn mode-12-btn col-span-1 py-2 text-sm font-bold rounded-lg transition duration-150 shadow-md">
                         12-Step
                     </button>
-                </div>
-
-                <div class="flex justify-between space-x-4">
-                    <button id="clear-btn" class="w-1/2 py-2 font-bold rounded-lg transition duration-150 shadow-md">
+                    <button id="clear-btn" class="col-span-1 py-2 font-bold rounded-lg transition duration-150 shadow-md">
                         Clear
                     </button>
-                    <button id="default-btn" class="w-1/2 py-2 font-bold rounded-lg transition duration-150 shadow-md">
+                    <button id="default-btn" class="col-span-1 py-2 font-bold rounded-lg transition duration-150 shadow-md">
                         Default
                     </button>
                 </div>
+                
+            </div>
+
+            <div id="col-right" class="space-y-4 lg:pt-0">
                 
                 <div class="p-3 rounded-lg inner-panel-section">
                     <div class="flex items-center justify-between space-x-4">
@@ -96,10 +89,7 @@
                 </div>
 
                 <div class="text-sm pt-2">
-                    <p class="text-xs text-center mb-2 font-mono">
-                        Tempo Keys: ←/→ (± 1) &bull; ↑/↓ (± 5) &bull; <strong>Spacebar (Start/Stop)</strong>
-                    </p>
-
+                    
                     <div class="flex justify-between items-center p-3 rounded-lg border">
                         <p id="status-message" class="font-medium text-left truncate">Ready. Set your pattern and press START.</p>
                         <button id="info-btn" class="settings-btn px-3 py-1 text-xs sm:text-sm">
@@ -110,7 +100,7 @@
             </div>
             
         </div>
-        </div>
+    </div>
 
     <div id="settings-modal" class="fixed inset-0 z-50 bg-black bg-opacity-75 hidden flex items-center justify-center p-4">
         <div class="rounded-xl shadow-2xl w-full max-w-lg p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
