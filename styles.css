@@ -57,9 +57,6 @@ h1, h2, h3, button, input {
     color: var(--main-highlight);
 }
 
-/* --- REMOVED: NEW FIX: Force transparency for the placeholder H1 as the placeholder was removed. --- */
-
-
 /* --- FIX: New selector for inner recessed sections (BPM area, Grid, Bar Drop area) --- */
 .inner-panel-section { 
     background-color: var(--dark-inner);
@@ -117,6 +114,30 @@ h1, h2, h3, button, input {
     background-color: #17a297;
 }
 
+/* --- NEW STYLES FOR MODE BUTTONS (Requested change) --- */
+
+/* Mode Button Active State (Matches #default-btn) */
+.mode-btn.mode-btn-active {
+    background-color: var(--main-highlight) !important; /* Teal-700 */
+    color: var(--dark-bg) !important; /* Dark text */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+.mode-btn.mode-btn-active:hover {
+    background-color: #17a297 !important;
+}
+
+/* Mode Button Inactive State (Matches #clear-btn and default general button style) */
+.mode-btn.mode-btn-inactive {
+    background-color: #3d3d3d !important; /* Dark gray */
+    color: var(--light-text) !important; /* Light text */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+.mode-btn.mode-btn-inactive:hover {
+    background-color: #555 !important;
+}
+
+/* --- END NEW STYLES --- */
+
 /* START/STOP Button */
 #start-stop-btn {
     background-color: var(--accent-3); 
@@ -130,12 +151,6 @@ h1, h2, h3, button, input {
 .bg-green-600, .hover\:bg-green-500, .active\:bg-green-700, .focus\:ring-green-500 {
     background-color: var(--start-btn-stop) !important;
     color: var(--light-text) !important;
-}
-
-/* Mode Selection Buttons SELECTED state (Subtle highlight) */
-.mode-btn.mode-selected { 
-    background-color: var(--main-highlight) !important;
-    color: var(--dark-bg) !important;
 }
 
 /* Rhythm Grid & Square Styling */
@@ -198,20 +213,30 @@ h1, h2, h3, button, input {
     color: #999;
 }
 #settings-controls .bg-gray-100 {
-    background-color: #3d3d3d !important;
-    border-left-color: var(--accent-3) !important;
+    background-color: #3d3d3d !important; /* Panel background */
 }
-/* Accent text in info modal */
-#info-content strong { color: var(--light-text); }
-.text-primary-accent { color: var(--accent-3); }
-.text-secondary-accent { color: var(--accent-2); }
-.text-tertiary-accent { color: var(--accent-1); }
-.text-off-accent { color: var(--subtle-text); }
-
+/* --- FIX FOR LEGIBILITY IN SETTINGS MODAL (Requested fix) --- */
+/* Ensure ALL text/labels within the settings controls are bright and visible */
+#settings-controls .text-gray-800, 
+#settings-controls .text-gray-700,
+#settings-controls .text-gray-300 { 
+    color: var(--light-text) !important; 
+}
+/* Ensure the H3 title (Primary, Secondary, Tertiary) is bright */
+#settings-controls h3 {
+    color: white !important; 
+}
+/* Also fix the text color in the volume/frequency value spans */
+#settings-controls span[id$="-val"] {
+    color: var(--accent-3) !important;
+}
+#settings-controls .border-l-4 {
+    border-left-color: var(--accent-3) !important; /* Use Primary accent for ALL borders */
+}
 
 /* Custom slider track and thumb */
 input[type=range] {
-    background: #555;
+    background: var(--dark-inner); /* Darker track */
 }
 input[type=range]::-webkit-slider-thumb {
     background: var(--accent-3); 
@@ -221,8 +246,15 @@ input[type=range]::-moz-range-thumb {
 }
 /* Select inputs for dark mode */
 #settings-controls select {
-    background-color: #3d3d3d;
+    /* FIX: Use dark background and light text for legibility in dropdowns */
+    background-color: var(--dark-inner);
     border-color: #555;
     color: var(--light-text);
     font-family: var(--main-font);
 }
+/* Accent text in info modal */
+#info-content strong { color: var(--light-text); }
+.text-primary-accent { color: var(--accent-3); }
+.text-secondary-accent { color: var(--accent-2); }
+.text-tertiary-accent { color: var(--accent-1); }
+.text-off-accent { color: var(--subtle-text); }

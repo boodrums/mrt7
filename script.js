@@ -9,10 +9,11 @@ const WAVEFORMS = ['sine', 'square', 'sawtooth', 'triangle'];
 
 // Default audio settings (used if nothing in localStorage)
 const DEFAULT_AUDIO_SETTINGS = {
-    // Updated settings reflect the Cyan theme color mapping
-    state3: { freq: 880, vol: 0.8, type: 'sine', color: 'cyan-600', name: 'Primary (Cyan)' }, 
-    state2: { freq: 440, vol: 0.4, type: 'triangle', color: 'orange-500', name: 'Secondary (Orange)' }, 
-    state1: { freq: 220, vol: 0.2, type: 'square', color: 'teal-400', name: 'Tertiary (Teal)' }
+    // UPDATED: Using CSS variables for clarity and consistency. 
+    // The 'color' key is used for the modal border. 'squareClass' links to the grid visuals.
+    state3: { freq: 880, vol: 0.8, type: 'sine', color: 'var(--accent-3)', name: 'Primary (Teal-500)', squareClass: 'square-accent-3' }, 
+    state2: { freq: 440, vol: 0.4, type: 'triangle', color: 'var(--accent-2)', name: 'Secondary (Lime-500)', squareClass: 'square-accent-2' }, 
+    state1: { freq: 220, vol: 0.2, type: 'square', color: 'var(--accent-1)', name: 'Tertiary (Amber-400)', squareClass: 'square-accent-1' }
 };
 let audioSettings = DEFAULT_AUDIO_SETTINGS; // Will be populated by loadSettings
 
@@ -392,14 +393,17 @@ function cycleCountIn() {
 function updateModeButtons() {
     document.querySelectorAll('.mode-btn').forEach(btn => {
         const mode = parseInt(btn.dataset.mode);
+        
+        // Remove old style classes from the script (Tailwind)
         btn.classList.remove('bg-cyan-600', 'bg-gray-200', 'text-white', 'text-gray-700', 'hover:bg-cyan-500', 'hover:bg-gray-300');
         
+        // Use custom CSS classes for styling
         if (mode === currentMode) {
-            // Selected state: Cyan background, white text
-            btn.classList.add('bg-cyan-600', 'text-white', 'hover:bg-cyan-500');
+            btn.classList.add('mode-btn-active');
+            btn.classList.remove('mode-btn-inactive');
         } else {
-            // Unselected state: Light gray background, dark text
-            btn.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+            btn.classList.add('mode-btn-inactive');
+            btn.classList.remove('mode-btn-active');
         }
     });
 }
@@ -504,7 +508,7 @@ function resetVisuals() {
 // --- Settings Modal Logic ---
 
 function createSettingControl(stateKey, settings) {
-    const { name, color, freq, vol, type } = settings;
+    const { name, color, freq, vol, type, squareClass } = settings;
     
     // Generate options for the waveform selector
     const waveformOptions = WAVEFORMS.map(w => 
@@ -512,25 +516,30 @@ function createSettingControl(stateKey, settings) {
     ).join('');
 
     return `
-        <div class="p-4 rounded-lg bg-gray-100 border-l-4 border-${color.replace('-600', '-500')}">
-            <h3 class="text-lg font-semibold text-gray-800 mb-3">${name}</h3>
+        <div class="p-4 rounded-lg bg-gray-100 border-l-4" style="border-left-color: ${color};">
+            <h3 class="text-lg font-semibold text-white mb-3">
+                ${name} 
+                <span class="text-sm font-normal text-white ml-2">(Grid: 
+                    <span class="inline-block w-3 h-3 rounded-full align-middle ${squareClass}" style="border: 1px solid #555;"></span>
+                )</span>
+            </h3>
 
             <div class="mb-4">
-                <label for="${stateKey}-freq" class="block text-sm font-medium text-gray-700">Pitch (Frequency): <span id="${stateKey}-freq-val">${freq} Hz</span></label>
+                <label for="${stateKey}-freq" class="block text-sm font-medium text-gray-300">Pitch (Frequency): <span id="${stateKey}-freq-val">${freq} Hz</span></label>
                 <input type="range" id="${stateKey}-freq" data-setting="freq" data-key="${stateKey}" 
                        min="50" max="1500" step="10" value="${freq}" 
                        class="w-full h-2 rounded-lg appearance-none cursor-pointer mt-1">
             </div>
 
             <div class="mb-4">
-                <label for="${stateKey}-vol" class="block text-sm font-medium text-gray-700">Volume: <span id="${stateKey}-vol-val">${(vol * 100).toFixed(0)}%</span></label>
+                <label for="${stateKey}-vol" class="block text-sm font-medium text-gray-300">Volume: <span id="${stateKey}-vol-val">${(vol * 100).toFixed(0)}%</span></label>
                 <input type="range" id="${stateKey}-vol" data-setting="vol" data-key="${stateKey}" 
                        min="0.01" max="1.0" step="0.01" value="${vol}" 
                        class="w-full h-2 rounded-lg appearance-none cursor-pointer mt-1">
             </div>
 
             <div>
-                <label for="${stateKey}-type" class="block text-sm font-medium text-gray-700">Timbre (Waveform):</label>
+                <label for="${stateKey}-type" class="block text-sm font-medium text-gray-300">Timbre (Waveform):</label>
                 <select id="${stateKey}-type" data-setting="type" data-key="${stateKey}"
                         class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm rounded-md bg-white text-gray-800">
                     ${waveformOptions}
