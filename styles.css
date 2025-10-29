@@ -42,10 +42,11 @@ h1, h2, h3, button, input {
 
 /* Style for the main metronome control card */
 #metronome-panel {
-    /* Base styles applied to all screen sizes */
+    /* Base styles applied to all screen sizes (Mobile First) */
     color: var(--light-text);
-    padding-top: 1.5rem; 
-    padding-bottom: 1.5rem;
+    /* MODIFIED: Reduced padding for mobile */
+    padding-top: 0.5rem; 
+    padding-bottom: 0.5rem;
     margin-left: auto;
     margin-right: auto;
     
@@ -58,6 +59,10 @@ h1, h2, h3, button, input {
 /* Re-apply the wrapper styles for larger screens (sm breakpoint and up, matching Tailwind's default) */
 @media (min-width: 640px) { 
     #metronome-panel {
+        /* FIXED: Restored original top/bottom padding for larger screens */
+        padding-top: 1.5rem; 
+        padding-bottom: 1.5rem;
+        
         background-color: var(--dark-card); /* Re-apply dark card background */
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); /* Re-apply shadow */
         border: 1px solid #444; /* Re-apply border */
