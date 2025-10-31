@@ -74,6 +74,15 @@ h1, h2, h3, button, input {
     color: var(--main-highlight);
 }
 
+/* NEW: Session Timer Styling (Matches h1) */
+#session-timer {
+    font-family: var(--main-font);
+    color: var(--main-highlight);
+    font-size: 1.25rem;
+    font-weight: 400; 
+    white-space: nowrap; 
+}
+
 /* --- FIX: New selector for inner recessed sections (BPM area, Grid, Bar Drop area) --- */
 .inner-panel-section { 
     background-color: var(--dark-inner);
@@ -101,8 +110,8 @@ h1, h2, h3, button, input {
     margin: 0; 
 }
 
-/* General Button Styles (Tempo, Settings, Clear/Reset) */
-.tempo-btn, .settings-btn, #clear-btn, #default-btn, #bar-drop-reset-btn, #count-in-btn, #settings-btn, .mode-btn {
+/* General Button Styles (Settings, Clear/Reset, Mode) */
+.settings-btn, #clear-btn, #default-btn, #bar-drop-reset-btn, #count-in-btn, #settings-btn, .mode-btn {
     font-size: 0.75rem; 
     font-weight: 700;
     border-radius: 0.5rem;
@@ -114,13 +123,40 @@ h1, h2, h3, button, input {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     touch-action: manipulation;
 }
-.tempo-btn:hover, .settings-btn:hover, #clear-btn:hover, #default-btn:hover, #bar-drop-reset-btn:hover, #count-in-btn:hover, #settings-btn:hover, .mode-btn:hover {
+.settings-btn:hover, #clear-btn:hover, #default-btn:hover, #bar-drop-reset-btn:hover, #count-in-btn:hover, #settings-btn:hover, .mode-btn:hover {
     background-color: #555;
 }
-.tempo-btn:active, .settings-btn:active, #clear-btn:active, #default-btn:active, #bar-drop-reset-btn:active, #count-in-btn:active, #settings-btn:active, .mode-btn:active {
+.settings-btn:active, #clear-btn:active, #default-btn:active, #bar-drop-reset-btn:active, #count-in-btn:active, #settings-btn:active, .mode-btn:active {
     background-color: #666;
     box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
 }
+
+/* --- ENHANCEMENT: Larger Tempo Buttons for Touch Displays (Applied to .tempo-btn) --- */
+.tempo-btn {
+    font-size: 1.1rem;      /* Increased font size for better visibility */
+    padding-top: 0.75rem;   /* Increased vertical padding */
+    padding-bottom: 0.75rem;/* Increased vertical padding */
+    height: auto; 
+    
+    /* Inherit general button styles */
+    font-weight: 700;
+    border-radius: 0.5rem;
+    transition-property: all;
+    transition-duration: 150ms;
+    background-color: #3d3d3d; 
+    color: var(--light-text);
+    border: 1px solid #444;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    touch-action: manipulation;
+}
+.tempo-btn:hover {
+    background-color: #555;
+}
+.tempo-btn:active {
+    background-color: #666;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+}
+/* --- END ENHANCEMENT --- */
 
 /* Accent Buttons: Default Pattern, +1 Bar Drop, Count-In (using the main highlight) */
 #default-btn, #bar-drop-increase-btn, #count-in-btn {
@@ -131,7 +167,7 @@ h1, h2, h3, button, input {
     background-color: #17a297;
 }
 
-/* --- NEW STYLES FOR MODE BUTTONS (Requested change) --- */
+/* --- NEW STYLES FOR MODE BUTTONS --- */
 
 /* Mode Button Active State (Matches #default-btn) */
 .mode-btn.mode-btn-active {
@@ -364,4 +400,32 @@ input[type=range]::-moz-range-thumb {
 .count-in-active:active {
     background-color: var(--dark-inner) !important;
     box-shadow: none;
+}
+
+/* --- NEW STYLE FOR TAP TEMPO BUTTON (Square, simplified style) --- */
+#tap-tempo-btn {
+    /* FULFILLED REQUEST: Square, No Shadow, Darker Style */
+    background-color: #3d3d3d; /* Dark Gray (Matches tempo-btn) */
+    color: var(--light-text); 
+    /* Overrides the w-16 h-16 classes from index.html, keeping size */
+    width: 4rem; 
+    height: 4rem; 
+    
+    border-radius: 0.5rem; /* Subtle roundness */
+    box-shadow: none;      /* No shadow */
+    border: 1px solid #444; 
+    
+    touch-action: manipulation;
+    transition-property: all;
+    transition-duration: 150ms;
+}
+
+#tap-tempo-btn:hover {
+    background-color: #555; /* Match general button hover */
+}
+
+#tap-tempo-btn:active {
+    background-color: #666; /* Match general button active */
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5); 
+    transform: none; 
 }

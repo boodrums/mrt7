@@ -14,33 +14,44 @@
 
     <div id="metronome-panel" class="w-full max-w-lg lg:max-w-4xl p-2 sm:p-6 rounded-xl">
         
-        <h1 class="text-xl font-normal mb-4 text-gray-400">MRT7 Rhythm Trainer</h1>
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-xl font-normal text-gray-400">MRT7 Rhythm Trainer</h1>
+            <div id="session-timer" class="text-xl font-normal">00:00</div>
+        </div>
         
         <div class="lg:grid lg:grid-cols-2 lg:gap-6">
             
             <div id="col-left" class="mb-6 lg:mb-0">
                 
-                <div class="mb-5 p-3 rounded-lg inner-panel-section">
+                <div class="mb-4 p-3 rounded-lg inner-panel-section">
                     
-                    <div class="flex flex-col items-center justify-center mb-4">
-                        <div id="bpm-display-wrapper" class="cursor-pointer p-1 rounded-lg transition duration-150">
-                            <span id="bpm-display-value" class="text-5xl sm:text-6xl font-extrabold">120 BPM</span>
+                    <div class="flex items-center justify-between h-20"> 
+                        
+                        <div class="flex flex-col items-start justify-center flex-grow">
+                            <div id="bpm-display-wrapper" class="cursor-pointer p-1 rounded-lg transition duration-150">
+                                <span id="bpm-display-value" class="text-5xl font-extrabold">120 BPM</span>
+                            </div>
+                            <input id="bpm-manual-input" type="text" inputmode="numeric" min="30" max="300" value="120"
+                           class="hidden w-40 text-5xl font-extrabold text-center rounded-md p-1 border-2 transition duration-150">
                         </div>
-                        <input id="bpm-manual-input" type="text" inputmode="numeric" min="30" max="300" value="120"
-       class="hidden w-40 text-5xl sm:text-6xl font-extrabold text-center rounded-md p-1 border-2 transition duration-150">
-                    </div>
-
-                    <div id="tempo-controls" class="grid grid-cols-6 gap-2 mt-4">
-                        <button data-delta="-10" class="tempo-btn">-10</button>
-                        <button data-delta="-5" class="tempo-btn">-5</button>
-                        <button data-delta="-1" class="tempo-btn">-1</button>
-                        <button data-delta="1" class="tempo-btn">+1</button>
-                        <button data-delta="5" class="tempo-btn">+5</button>
-                        <button data-delta="10" class="tempo-btn">+10</button>
+                        
+                        <button id="tap-tempo-btn" 
+                                class="w-16 h-16 rounded-full text-lg font-bold shadow-lg transition duration-200 flex-shrink-0">
+                            TAP
+                        </button>
                     </div>
                 </div>
 
-                <div class="mb-4 flex space-x-2 sm:space-x-4">
+                <div id="tempo-controls" class="grid grid-cols-6 gap-2 my-4">
+                    <button data-delta="-10" class="tempo-btn">-10</button>
+                    <button data-delta="-5" class="tempo-btn">-5</button>
+                    <button data-delta="-1" class="tempo-btn">-1</button>
+                    <button data-delta="1" class="tempo-btn">+1</button>
+                    <button data-delta="5" class="tempo-btn">+5</button>
+                    <button data-delta="10" class="tempo-btn">+10</button>
+                </div>
+                
+                <div class="my-4 flex space-x-2 sm:space-x-4">
                     <button id="count-in-btn" class="flex-shrink-0 w-1/4 px-2 py-2 text-sm sm:text-base font-bold rounded-xl shadow-lg transition duration-200">
                         Count: 0
                     </button>
@@ -52,7 +63,7 @@
                     </button>
                 </div>
                 
-                <div id="rhythm-grid" class="grid gap-2 aspect-square p-2 rounded-lg shadow-inner inner-panel-section mb-4">
+                <div id="rhythm-grid" class="grid gap-2 aspect-square p-2 rounded-lg shadow-inner inner-panel-section my-4">
                     </div>
                 
                 <div class="mb-4 grid grid-cols-4 gap-2">

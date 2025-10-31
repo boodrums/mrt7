@@ -51,6 +51,14 @@ let countInBars = 0; // 0, 1, or 2
 let isCountingIn = false;
 let countInStep = 0; // Tracks 16th/12th notes during count-in
 
+// NEW: Tap Tempo State Variables
+let tapTempoTimes = [];
+const MAX_TAP_TIMES = 4; // Use the last 4 taps for calculation
+
+// NEW: Timer State Variables
+let sessionStartTime = null;
+let timerInterval = null;
+
 // Wakelock Variable
 let wakeLock = null; 
 
@@ -88,6 +96,13 @@ const factoryResetBtn = document.getElementById('factory-reset-btn');
 const infoBtn = document.getElementById('info-btn');
 const infoModal = document.getElementById('info-modal');
 const closeInfoModalBtn = document.getElementById('close-info-modal-btn');
+
+// NEW: Tap Tempo Element
+const tapTempoBtn = document.getElementById('tap-tempo-btn');
+
+// NEW: Timer Element
+const timerElement = document.getElementById('session-timer');
+
 
 const MAX_BARS_TO_CYCLE = 8; // Max bars for either play or silent
 
@@ -215,6 +230,40 @@ function releaseWakeLock() {
             .catch(err => {
                 console.error('Failed to release wake lock:', err);
             });
+    }
+}
+
+// --- Session Timer Logic ---
+
+function updateTimerDisplay() {
+    if (!sessionStartTime || !timerElement) return;
+
+    const elapsedMs = Date.now() - sessionStartTime;
+    const totalSeconds = Math.floor(elapsedMs / 1000);
+    const minutes = String(Math.floor(totalSeconds / 60) % 60).padStart(2, '0');
+    const seconds = String(totalSeconds % 60).padStart(2, '0');
+
+    timerElement.textContent = `${minutes}:${seconds}`;
+}
+
+function startTimer() {
+    if (timerInterval) return; // Prevent multiple timers
+
+    sessionStartTime = Date.now();
+    updateTimerDisplay(); // Set initial time (00:00)
+
+    // Update every second
+    timerInterval = setInterval(updateTimerDisplay, 1000); 
+}
+
+function stopTimer() {
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+    sessionStartTime = null;
+    if (timerElement) {
+        timerElement.textContent = '00:00';
     }
 }
 
@@ -346,7 +395,62 @@ function adjustTempo(delta) {
     }
 }
 
+// NEW: Tap Tempo Logic
+function calculateTapTempo() {
+    // Requires at least two taps (one interval)
+    if (tapTempoTimes.length < 2) return;
+
+    let totalInterval = 0;
+    for (let i = 1; i < tapTempoTimes.length; i++) {
+        // Calculate interval in milliseconds
+        totalInterval += tapTempoTimes[i] - tapTempoTimes[i - 1];
+    }
+    
+    const averageIntervalMs = totalInterval / (tapTempoTimes.length - 1);
+    
+    // Convert ms interval to BPM: (60 seconds/minute * 1000 ms/second) / averageIntervalMs
+    let newTempo = Math.round(60000 / averageIntervalMs);
+    
+    // Clamp the new tempo to the allowed range (30-300)
+    newTempo = Math.max(MIN_BPM, Math.min(MAX_BPM, newTempo));
+    
+    if (newTempo !== tempo) {
+        tempo = newTempo;
+        updateBpmDisplay();
+        statusMessage.textContent = `Tap Tempo set to ${tempo} BPM.`;
+    }
+}
+
+function handleTapTempo() {
+    const now = Date.now();
+    
+    // Check if the time since the last tap is too long (e.g., > 2 seconds)
+    // If it is, reset the sequence.
+    if (tapTempoTimes.length > 0 && (now - tapTempoTimes[tapTempoTimes.length - 1] > 2000)) {
+        tapTempoTimes = [];
+        statusMessage.textContent = "Tap Tempo sequence reset.";
+    }
+    
+    tapTempoTimes.push(now);
+    
+    // Only keep the last MAX_TAP_TIMES timestamps
+    if (tapTempoTimes.length > MAX_TAP_TIMES) {
+        tapTempoTimes.shift(); // Remove the oldest tap
+    }
+
+    // Calculate tempo when we have enough data (at least two taps)
+    if (tapTempoTimes.length >= 2) {
+        calculateTapTempo();
+    } else {
+        statusMessage.textContent = `Tap ${tapTempoTimes.length}. Tap ${2 - tapTempoTimes.length} more time(s) to set tempo.`;
+    }
+}
+
+
 function handleManualInputDisplay() {
+    // Clear tap history when switching to manual input
+    tapTempoTimes = [];
+    
     if (!isPlaying) {
         bpmDisplayWrapper.classList.add('hidden');
         bpmManualInput.classList.remove('hidden');
@@ -693,8 +797,9 @@ function startMetronome() {
     startStopBtn.classList.remove('bg-cyan-600', 'hover:bg-cyan-500', 'active:bg-cyan-700', 'focus:ring-cyan-500');
     startStopBtn.classList.add('bg-green-600', 'hover:bg-green-500', 'active:bg-green-700', 'focus:ring-green-500');
 
-    // --- ACQUIRE WAKE LOCK ---
+    // --- ACQUIRE WAKE LOCK & START TIMER ---
     requestWakeLock();
+    startTimer(); // NEW: Start the session timer
 
     // --- Initialization for Scheduling ---
     nextNoteTime = audioContext.currentTime; 
@@ -704,6 +809,9 @@ function startMetronome() {
     currentBarCycle = 0; 
     isCountingIn = false;
     countInStep = 0;
+    
+    // Clear tap history if starting
+    tapTempoTimes = [];
 
     
     // Set up Count-In if enabled
@@ -728,8 +836,9 @@ function stopMetronome() {
     startStopBtn.classList.remove('bg-green-600', 'hover:bg-green-500', 'active:bg-green-700', 'focus:ring-green-500');
     startStopBtn.classList.add('bg-cyan-600', 'hover:bg-cyan-500', 'active:bg-cyan-700', 'focus:ring-cyan-500');
 
-    // --- RELEASE WAKE LOCK ---
+    // --- RELEASE WAKE LOCK & STOP TIMER ---
     releaseWakeLock();
+    stopTimer(); // NEW: Stop and reset the session timer
 
     if (timerWorker) {
         clearInterval(timerWorker);
@@ -761,6 +870,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dropBarIncreaseBtn) dropBarIncreaseBtn.addEventListener('click', increaseDropBar);
     if (dropBarResetBtn) dropBarResetBtn.addEventListener('click', resetDropBar);
 
+    // NEW: Tap Tempo Listener
+    if (tapTempoBtn) tapTempoBtn.addEventListener('click', handleTapTempo);
 
     // BPM input controls
     bpmDisplayWrapper.addEventListener('click', handleManualInputDisplay);
