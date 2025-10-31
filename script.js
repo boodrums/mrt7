@@ -319,6 +319,9 @@ function scheduleNote() {
                 isCountingIn = false;
                 currentStep = 0; // Start the main pattern from step 0
                 currentBarCycle = 0; // Reset bar drop counter
+                
+                startTimer(); // FIX: Start the timer exactly when the pattern begins!
+
                 statusMessage.textContent = `Pattern START. Metronome running at ${tempo} BPM.`;
             }
             
@@ -797,12 +800,12 @@ function startMetronome() {
     startStopBtn.classList.remove('bg-cyan-600', 'hover:bg-cyan-500', 'active:bg-cyan-700', 'focus:ring-cyan-500');
     startStopBtn.classList.add('bg-green-600', 'hover:bg-green-500', 'active:bg-green-700', 'focus:ring-green-500');
 
-    // --- ACQUIRE WAKE LOCK & START TIMER ---
+    // --- ACQUIRE WAKE LOCK ---
     requestWakeLock();
-    startTimer(); // NEW: Start the session timer
 
     // --- Initialization for Scheduling ---
-    nextNoteTime = audioContext.currentTime; 
+    // nextNoteTime = audioContext.currentTime; // OLD: Caused choked sound
+    nextNoteTime = audioContext.currentTime + 0.05; // FIX: Add 50ms buffer for stable sound start
     
     // Reset all counters
     currentStep = 0; 
@@ -819,6 +822,8 @@ function startMetronome() {
         isCountingIn = true;
         statusMessage.textContent = `Starting with ${countInBars} count-in bar${countInBars > 1 ? 's' : ''}...`;
     } else {
+        // FIX: Start the timer immediately if no count-in is used
+        startTimer(); 
         statusMessage.textContent = `Metronome running at ${tempo} BPM.`;
     }
     
@@ -838,7 +843,7 @@ function stopMetronome() {
 
     // --- RELEASE WAKE LOCK & STOP TIMER ---
     releaseWakeLock();
-    stopTimer(); // NEW: Stop and reset the session timer
+    stopTimer(); // Stop and reset the session timer
 
     if (timerWorker) {
         clearInterval(timerWorker);
