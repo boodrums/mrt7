@@ -62,6 +62,19 @@ let timerInterval = null;
 // Wakelock Variable
 let wakeLock = null; 
 
+// --- NEW VISUAL OPTIMIZATION VARIABLE ---
+// Global variable to track the DOM element that is currently lit for efficient cleanup.
+let currentVisualSquare = null; 
+
+// --- NEW VISUAL SYNC VARIABLES ---
+let visualLoopRunning = false;
+let currentStepTime = 0.0; // The AudioContext time when the current step should happen
+let lastStep = -1; // The index of the last step that was visually updated
+
+// --- NEW: Web Worker for Precise Scheduling ---
+let schedulerWorker = null;
+
+
 // Element references
 const tempoDisplayValue = document.getElementById('bpm-display-value');
 const bpmDisplayWrapper = document.getElementById('bpm-display-wrapper');
@@ -110,7 +123,8 @@ let audioContext;
 let nextNoteTime = 0.0;
 const lookahead = 25.0; // In milliseconds
 const scheduleAheadTime = 0.1; // In seconds
-let timerWorker = null;
+// let timerWorker = null; // Removed, replaced by Web Worker
+
 
 // --- Settings Management (Local Storage) ---
 
@@ -332,6 +346,9 @@ function scheduleNote() {
             const isBarDropped = totalCycleLength > 0 && currentBarCycle >= barsToPlay;
             const stepState = pattern[currentStep];
 
+            // --- FIX: Update currentStepTime instead of using setTimeout ---
+            currentStepTime = time;
+
             if (!isBarDropped) { // This is the "Play" phase
                 // Play sound based on pattern state
                 if (stepState === 3) {
@@ -342,12 +359,9 @@ function scheduleNote() {
                     playSound(time, audioSettings.state1);
                 }
                 
-                // Normal visuals
-                setTimeout(() => updateVisuals(currentStep), (time - audioContext.currentTime) * 1000);
-
+                // Visuals handled by visualUpdateLoop
             } else { // This is the "Silent" (Dropped) phase
-                // Silent visuals (no sound)
-                setTimeout(() => updateSilentVisuals(currentStep), (time - audioContext.currentTime) * 1000);
+                // Visuals handled by visualUpdateLoop
             }
             
             // Advance main pattern step and check for bar end
@@ -368,14 +382,64 @@ function scheduleNote() {
     }
 }
 
-/**
- * The main loop that runs on an interval to check if notes need scheduling.
- */
-function schedulerLoop() {
-     if (isPlaying) {
+// --- NEW: Function to handle 'tick' messages from the Web Worker ---
+function handleWorkerTick() {
+    // This is the equivalent of the old schedulerLoop(), but triggered by the worker.
+    if (isPlaying) {
         scheduleNote();
     }
 }
+
+
+// --- NEW: Visual Update Loop for Precision (requestAnimationFrame) ---
+
+/**
+ * Uses requestAnimationFrame to poll the AudioContext time and trigger
+ * visuals exactly when the sound is scheduled to play.
+ */
+function visualUpdateLoop() {
+    if (!isPlaying) {
+        visualLoopRunning = false;
+        return;
+    }
+
+    const currentTime = audioContext.currentTime;
+    const timeSinceStep = currentTime - currentStepTime;
+
+    // Check if the current time is within a small window (e.g., 10ms) of the scheduled time.
+    if (timeSinceStep >= -0.010 && timeSinceStep < 0.1) { 
+        
+        // Ensure we only update the visuals once per step
+        if (currentStep !== lastStep) { 
+            
+            // Determine the step that should be highlighted *now* (which is the step that just triggered the sound)
+            const visualStep = (currentStep + GRID_SIZE - 1) % GRID_SIZE;
+            
+            // Check the bar cycle status for the bar that is currently playing.
+            const totalCycleLength = barsToPlay + barsToDrop;
+            const currentBarInCycle = (visualStep === GRID_SIZE - 1) ? currentBarCycle : (currentBarCycle + totalCycleLength - 1) % totalCycleLength;
+            const isBarDropped = totalCycleLength > 0 && currentBarInCycle >= barsToPlay;
+
+
+            if (!isCountingIn) {
+                 if (!isBarDropped) {
+                    updateVisuals(visualStep);
+                 } else {
+                    updateSilentVisuals(visualStep);
+                 }
+            }
+            
+            lastStep = currentStep; // Update lastStep to currentStep to prevent re-triggering visuals
+        }
+    } else if (isCountingIn) {
+         // Clear visuals during the count-in phase.
+         resetVisuals();
+         lastStep = -1;
+    }
+    
+    requestAnimationFrame(visualUpdateLoop);
+}
+
 
 // --- Tempo/Pattern/Drop Functions ---
 
@@ -646,16 +710,24 @@ function updateGridVisuals() {
     }
 }
 
+// --- OPTIMIZED VISUAL UPDATE FUNCTIONS ---
+
 function updateVisuals(step) {
     // ADDED: Prevent visuals from updating if the metronome has been stopped
     if (!isPlaying) return; 
 
-    // Normal playing visuals
-    document.querySelectorAll('.is-playing, .is-silent-playing').forEach(el => el.classList.remove('is-playing', 'is-silent-playing'));
-    
-    const currentSquare = document.getElementById(`step-${step}`);
-    if (currentSquare) {
-        currentSquare.classList.add('is-playing');
+    // 1. CLEAR previous visual state efficiently (AVOIDS document.querySelectorAll)
+    if (currentVisualSquare) {
+        currentVisualSquare.classList.remove('is-playing', 'is-silent-playing');
+    }
+
+    // 2. SET new visual state
+    const newSquare = document.getElementById(`step-${step}`);
+    if (newSquare) {
+        newSquare.classList.add('is-playing');
+        currentVisualSquare = newSquare; // Update the reference to the newly lit square
+    } else {
+        currentVisualSquare = null;
     }
 }
 
@@ -663,22 +735,30 @@ function updateSilentVisuals(step) {
     // ADDED: Prevent visuals from updating if the metronome has been stopped
     if (!isPlaying) return; 
 
-    // Silent bar visuals
-    document.querySelectorAll('.is-playing, .is-silent-playing').forEach(el => el.classList.remove('is-playing', 'is-silent-playing'));
-    
-    const currentSquare = document.getElementById(`step-${step}`);
-    if (currentSquare) {
-        currentSquare.classList.add('is-silent-playing');
+    // 1. CLEAR previous visual state efficiently (AVOIDS document.querySelectorAll)
+    if (currentVisualSquare) {
+        currentVisualSquare.classList.remove('is-playing', 'is-silent-playing');
+    }
+
+    // 2. SET new silent visual state
+    const newSquare = document.getElementById(`step-${step}`);
+    if (newSquare) {
+        newSquare.classList.add('is-silent-playing');
+        currentVisualSquare = newSquare; // Update the reference
+    } else {
+        currentVisualSquare = null;
     }
 }
 
 function resetVisuals() {
-    document.querySelectorAll('.is-playing, .is-silent-playing').forEach(el => el.classList.remove('is-playing', 'is-silent-playing'));
-    currentStep = 0;
-    currentBarCycle = 0;
-    isCountingIn = false;
-    countInStep = 0;
+    // Clear the currently active square's highlight
+    if (currentVisualSquare) {
+        currentVisualSquare.classList.remove('is-playing', 'is-silent-playing');
+        currentVisualSquare = null; // Clear the reference
+    }
+    // Do NOT reset currentStep/currentBarCycle/isCountingIn here.
 }
+
 
 // --- Settings Modal Logic ---
 
@@ -795,6 +875,14 @@ function startMetronome() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
+    
+    // --- WORKER FIX: Initialize and start the Web Worker ---
+    if (!schedulerWorker) {
+        schedulerWorker = new Worker("metronome_worker.js");
+        schedulerWorker.onmessage = handleWorkerTick;
+    }
+    schedulerWorker.postMessage({ command: "start", interval: lookahead });
+    // --- END WORKER FIX ---
 
     if (audioContext.state === 'suspended') {
         audioContext.resume();
@@ -810,8 +898,8 @@ function startMetronome() {
     requestWakeLock();
 
     // --- Initialization for Scheduling ---
-    // nextNoteTime = audioContext.currentTime; // OLD: Caused choked sound
     nextNoteTime = audioContext.currentTime + 0.05; // FIX: Add 50ms buffer for stable sound start
+    currentStepTime = 0.0; // Reset visual sync time
     
     // Reset all counters
     currentStep = 0; 
@@ -835,7 +923,14 @@ function startMetronome() {
     
     updateCycleDisplay(); 
     
-    timerWorker = setInterval(schedulerLoop, lookahead);
+    // --- NEW: Start the high-precision visual loop ---
+    if (!visualLoopRunning) {
+        visualLoopRunning = true;
+        lastStep = -1; // Ensure the first step is highlighted
+        requestAnimationFrame(visualUpdateLoop);
+    }
+    
+    // timerWorker was removed, replaced by Web Worker
 }
 
 function stopMetronome() {
@@ -851,11 +946,15 @@ function stopMetronome() {
     releaseWakeLock();
     stopTimer(); // Stop and reset the session timer
 
-    if (timerWorker) {
-        clearInterval(timerWorker);
-        timerWorker = null;
+    // --- WORKER FIX: Stop the Web Worker ---
+    if (schedulerWorker) {
+        schedulerWorker.postMessage({ command: "stop" });
     }
+    // --- END WORKER FIX ---
     
+    // Signal the visual loop to stop and ensure visual state is reset
+    visualLoopRunning = false;
+    lastStep = -1;
     resetVisuals();
     statusMessage.textContent = "Metronome stopped.";
 }
