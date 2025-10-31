@@ -62,17 +62,27 @@ let timerInterval = null;
 // Wakelock Variable
 let wakeLock = null; 
 
-// --- NEW VISUAL OPTIMIZATION VARIABLE ---
-// Global variable to track the DOM element that is currently lit for efficient cleanup.
+// --- NEW VISUAL OPTIMIZATION VARIABLE (USED in the optimized functions) ---
 let currentVisualSquare = null; 
 
-// --- NEW VISUAL SYNC VARIABLES ---
+// --- NEW VISUAL CONSTANT ---
+// Estimated base latency for visual/setTimeout compensation (milliseconds)
+const VISUAL_LATENCY_MS = 50; // Set base latency to the value that allows 300 BPM
+
+
+// --- SCHEDULING VARIABLES ---
+let audioContext;
+let nextNoteTime = 0.0;
+const lookahead = 25.0; // In milliseconds
+const scheduleAheadTime = 0.1; // In seconds
+
+// --- Web Worker for Precise Scheduling ---
+let schedulerWorker = null;
+
+// --- RAF POLLING VARIABLES ---
 let visualLoopRunning = false;
 let currentStepTime = 0.0; // The AudioContext time when the current step should happen
 let lastStep = -1; // The index of the last step that was visually updated
-
-// --- NEW: Web Worker for Precise Scheduling ---
-let schedulerWorker = null;
 
 
 // Element references
@@ -118,12 +128,6 @@ const timerElement = document.getElementById('session-timer');
 
 
 const MAX_BARS_TO_CYCLE = 8; // Max bars for either play or silent
-
-let audioContext;
-let nextNoteTime = 0.0;
-const lookahead = 25.0; // In milliseconds
-const scheduleAheadTime = 0.1; // In seconds
-// let timerWorker = null; // Removed, replaced by Web Worker
 
 
 // --- Settings Management (Local Storage) ---
@@ -322,6 +326,10 @@ function scheduleNote() {
             if (shouldClick) {
                 // Use the primary sound settings for a consistent, strong count-in pulse
                 playSound(time, audioSettings.state3); 
+                
+                // --- VISUAL SCHEDULING (Count-In) ---
+                // We set the visual time (slightly compensated) for the RAF loop to check.
+                currentStepTime = time - (VISUAL_LATENCY_MS / 1000);
             }
             
             // Advance count-in step
@@ -340,16 +348,30 @@ function scheduleNote() {
             }
             
         } else {
-            // --- MAIN RHYTHM GRID MODE ---
+            // --- MAIN RHYTHM GRID MODE (RAF Polling System) ---
             const totalCycleLength = barsToPlay + barsToDrop;
-            // The rhythm is dropped (silent) if the current bar in the cycle is >= barsToPlay
             const isBarDropped = totalCycleLength > 0 && currentBarCycle >= barsToPlay;
             const stepState = pattern[currentStep];
 
-            // --- FIX: Update currentStepTime instead of using setTimeout ---
-            currentStepTime = time;
+            // Calculate the duration of a single step in milliseconds
+            const secondsPerBeat = 60.0 / tempo;
+            const secondsPerStep = secondsPerBeat / (currentMode / 4); 
+            const msPerStep = secondsPerStep * 1000;
 
+            // Perceptual Adjustment: Reduce compensation when step duration is long (slow tempo).
+            let actualCompensationMs = VISUAL_LATENCY_MS; // Start with the 50ms base
+            
+            if (msPerStep > 100) { // If tempo is slow (e.g., 16th notes at < 150 BPM)
+                // Use a perceptually comfortable value, clamped between 10ms and 15ms
+                actualCompensationMs = Math.min(msPerStep / 10, 15);
+            }
+
+            // 1. Set the exact time (compensated) for the visual loop to check
+            currentStepTime = time - (actualCompensationMs / 1000);
+            
+            // 2. Schedule Sound
             if (!isBarDropped) { // This is the "Play" phase
+                
                 // Play sound based on pattern state
                 if (stepState === 3) {
                     playSound(time, audioSettings.state3);
@@ -358,13 +380,9 @@ function scheduleNote() {
                 } else if (stepState === 1) {
                     playSound(time, audioSettings.state1);
                 }
-                
-                // Visuals handled by visualUpdateLoop
-            } else { // This is the "Silent" (Dropped) phase
-                // Visuals handled by visualUpdateLoop
             }
             
-            // Advance main pattern step and check for bar end
+            // 3. Advance main pattern step and check for bar end
             previousStep = currentStep;
             currentStep = (currentStep + 1) % GRID_SIZE;
             if (previousStep === GRID_SIZE - 1) {
@@ -390,13 +408,8 @@ function handleWorkerTick() {
     }
 }
 
+// --- FINAL VISUAL LOOP: RAF Polling (Anti-Throttling) ---
 
-// --- NEW: Visual Update Loop for Precision (requestAnimationFrame) ---
-
-/**
- * Uses requestAnimationFrame to poll the AudioContext time and trigger
- * visuals exactly when the sound is scheduled to play.
- */
 function visualUpdateLoop() {
     if (!isPlaying) {
         visualLoopRunning = false;
@@ -404,16 +417,15 @@ function visualUpdateLoop() {
     }
 
     const currentTime = audioContext.currentTime;
-    const timeSinceStep = currentTime - currentStepTime;
-
-    // Check if the current time is within a small window (e.g., 10ms) of the scheduled time.
-    if (timeSinceStep >= -0.010 && timeSinceStep < 0.1) { 
+    
+    // Check if the current time is past the calculated visual display time
+    if (currentTime >= currentStepTime) { 
         
         // Ensure we only update the visuals once per step
         if (currentStep !== lastStep) { 
             
-            // Determine the step that should be highlighted *now* (which is the step that just triggered the sound)
-            const visualStep = (currentStep + GRID_SIZE - 1) % GRID_SIZE;
+            // *** THE CRITICAL FIX: Correctly calculate the index of the step that just occurred ***
+            const visualStep = (currentStep === 0) ? (GRID_SIZE - 1) : (currentStep - 1);
             
             // Check the bar cycle status for the bar that is currently playing.
             const totalCycleLength = barsToPlay + barsToDrop;
@@ -427,12 +439,15 @@ function visualUpdateLoop() {
                  } else {
                     updateSilentVisuals(visualStep);
                  }
+            } else {
+                 // During count-in, reset visuals immediately after the current step passes.
+                 resetVisuals();
             }
             
-            lastStep = currentStep; // Update lastStep to currentStep to prevent re-triggering visuals
+            lastStep = currentStep; // Mark this step as visually updated
         }
     } else if (isCountingIn) {
-         // Clear visuals during the count-in phase.
+         // Clear visuals during the count-in phase *before* the main pattern starts.
          resetVisuals();
          lastStep = -1;
     }
@@ -899,7 +914,6 @@ function startMetronome() {
 
     // --- Initialization for Scheduling ---
     nextNoteTime = audioContext.currentTime + 0.05; // FIX: Add 50ms buffer for stable sound start
-    currentStepTime = 0.0; // Reset visual sync time
     
     // Reset all counters
     currentStep = 0; 
@@ -923,14 +937,13 @@ function startMetronome() {
     
     updateCycleDisplay(); 
     
-    // --- NEW: Start the high-precision visual loop ---
+    // --- START RAF POLLING ---
     if (!visualLoopRunning) {
         visualLoopRunning = true;
-        lastStep = -1; // Ensure the first step is highlighted
+        currentStepTime = 0.0; 
+        lastStep = -1; 
         requestAnimationFrame(visualUpdateLoop);
     }
-    
-    // timerWorker was removed, replaced by Web Worker
 }
 
 function stopMetronome() {
@@ -952,9 +965,8 @@ function stopMetronome() {
     }
     // --- END WORKER FIX ---
     
-    // Signal the visual loop to stop and ensure visual state is reset
-    visualLoopRunning = false;
-    lastStep = -1;
+    // Ensure visual state is reset and stop the polling loop
+    visualLoopRunning = false; 
     resetVisuals();
     statusMessage.textContent = "Metronome stopped.";
 }
