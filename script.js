@@ -647,6 +647,9 @@ function updateGridVisuals() {
 }
 
 function updateVisuals(step) {
+    // ADDED: Prevent visuals from updating if the metronome has been stopped
+    if (!isPlaying) return; 
+
     // Normal playing visuals
     document.querySelectorAll('.is-playing, .is-silent-playing').forEach(el => el.classList.remove('is-playing', 'is-silent-playing'));
     
@@ -657,6 +660,9 @@ function updateVisuals(step) {
 }
 
 function updateSilentVisuals(step) {
+    // ADDED: Prevent visuals from updating if the metronome has been stopped
+    if (!isPlaying) return; 
+
     // Silent bar visuals
     document.querySelectorAll('.is-playing, .is-silent-playing').forEach(el => el.classList.remove('is-playing', 'is-silent-playing'));
     
