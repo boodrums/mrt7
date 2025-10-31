@@ -424,20 +424,31 @@ function visualUpdateLoop() {
         // Ensure we only update the visuals once per step
         if (currentStep !== lastStep) { 
             
-            // *** THE CRITICAL FIX: Correctly calculate the index of the step that just occurred ***
+            // Calculate the index of the step that just occurred
             const visualStep = (currentStep === 0) ? (GRID_SIZE - 1) : (currentStep - 1);
             
-            // Check the bar cycle status for the bar that is currently playing.
+            // --- CRITICAL FIX: Determine the bar cycle index for the VISUAL STEP ---
             const totalCycleLength = barsToPlay + barsToDrop;
-            const currentBarInCycle = (visualStep === GRID_SIZE - 1) ? currentBarCycle : (currentBarCycle + totalCycleLength - 1) % totalCycleLength;
-            const isBarDropped = totalCycleLength > 0 && currentBarInCycle >= barsToPlay;
+            
+            // Determine the bar index *currently in effect* (which is the index that was current
+            // before the audio worker advanced to the next bar on a bar-end step).
+            let barIndexForVisual = currentBarCycle;
 
+            if (visualStep === GRID_SIZE - 1 && totalCycleLength > 0) {
+                 // If the step that just happened was the last step of a bar (visualStep === GRID_SIZE - 1),
+                 // then the audio worker has already advanced currentBarCycle to the next bar's index.
+                 // We must therefore use the PREVIOUS bar index for the visual.
+                 barIndexForVisual = (currentBarCycle + totalCycleLength - 1) % totalCycleLength;
+            }
+
+            // Check bar drop state using the correctly indexed bar
+            const isBarDropped = totalCycleLength > 0 && barIndexForVisual >= barsToPlay;
 
             if (!isCountingIn) {
                  if (!isBarDropped) {
-                    updateVisuals(visualStep);
+                    updateVisuals(visualStep); // Play bar: Green/Accent colors
                  } else {
-                    updateSilentVisuals(visualStep);
+                    updateSilentVisuals(visualStep); // Silent bar: Dull/Silent color
                  }
             } else {
                  // During count-in, reset visuals immediately after the current step passes.
