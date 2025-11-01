@@ -432,11 +432,20 @@ function handleCycleCountIn() {
 
 // --- Main Control Functions ---
 
-function startMetronome() {
+async function startMetronome() { // <-- MODIFICATION: Added 'async'
     if (state.isPlaying) return;
 
     requestWakeLock();
-    startAudioEngine();
+
+    // --- MODIFICATION: Added 'await' and try/catch block ---
+    try {
+        await startAudioEngine(); // Wait for the audio engine to successfully resume
+    } catch (err) {
+        console.error("Failed to start audio engine:", err);
+        elements.statusMessage.textContent = "Error: Could not start audio.";
+        return; // Don't proceed if audio failed
+    }
+    // --- END MODIFICATION ---
     
     elements.startStopBtn.textContent = 'STOP'; 
     elements.startStopBtn.classList.remove('is-stopped');

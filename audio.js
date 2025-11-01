@@ -181,10 +181,11 @@ function handleWorkerTick() {
 /**
  * Starts the audio engine and the scheduling worker.
  */
-export function startAudioEngine() {
-    getAudioContext(); // Ensure context is created and resumed
+export async function startAudioEngine() { // <-- MODIFICATION: Added 'async'
+    getAudioContext(); // Ensure context is created
+    
     if (audioContext.state === 'suspended') {
-        audioContext.resume();
+        await audioContext.resume(); // <-- MODIFICATION: Added 'await'
     }
 
     if (!schedulerWorker) {
