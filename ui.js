@@ -432,20 +432,23 @@ function handleCycleCountIn() {
 
 // --- Main Control Functions ---
 
-async function startMetronome() { // <-- MODIFICATION: Added 'async'
+// --- FIX 3: ASYNC START/STOP ---
+// Made startMetronome async to handle the await
+async function startMetronome() {
     if (state.isPlaying) return;
 
     requestWakeLock();
 
-    // --- MODIFICATION: Added 'await' and try/catch block ---
+    // Wait for the audio engine to successfully resume
+    // and add error handling
     try {
-        await startAudioEngine(); // Wait for the audio engine to successfully resume
+        await startAudioEngine();
     } catch (err) {
         console.error("Failed to start audio engine:", err);
         elements.statusMessage.textContent = "Error: Could not start audio.";
         return; // Don't proceed if audio failed
     }
-    // --- END MODIFICATION ---
+    // --- END FIX 3 ---
     
     elements.startStopBtn.textContent = 'STOP'; 
     elements.startStopBtn.classList.remove('is-stopped');
@@ -489,6 +492,7 @@ function stopMetronome() {
 
 function addEventListeners() {
     // Main controls
+    // The click handler automatically handles the async startMetronome
     elements.startStopBtn.addEventListener('click', () => {
         if (!elements.bpmManualInput.classList.contains('hidden')) {
             processManualInput();

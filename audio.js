@@ -4,10 +4,49 @@ import { FACTORY_DEFAULT_AUDIO_SETTINGS, VISUAL_LATENCY_MS, LOOKAHEAD_MS, SCHEDU
 let audioContext;
 let schedulerWorker;
 
+// --- FIX 4: EMBEDDED WORKER ---
+// The entire code from metronome_worker.js is now a string.
+const workerCode = `
+let timerID = null;
+let interval = 25; // Default lookahead in ms
+
+self.onmessage = function(e) {
+    if (e.data.command === "start") {
+        interval = e.data.interval;
+        if (timerID) clearInterval(timerID);
+        // Start the fixed-interval timer to tell the main thread to schedule notes.
+        timerID = setInterval(function() {
+            self.postMessage("tick");
+        }, interval);
+    } else if (e.data.command === "stop") {
+        if (timerID) {
+            clearInterval(timerID);
+            timerID = null;
+        }
+    }
+};
+`;
+// This function creates a "Blob URL" for the worker,
+// which prevents any file-fetching errors on PWA resume.
+function createWorkerBlob() {
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    return URL.createObjectURL(blob);
+}
+// --- END FIX 4 ---
+
+
 /**
  * Initializes the AudioContext
  */
 export function getAudioContext() {
+    // --- FIX 1: 'closed' STATE CHECK ---
+    // If the context exists but the OS has permanently closed it,
+    // we must nullify it to force re-creation.
+    if (audioContext && audioContext.state === 'closed') {
+        audioContext = null;
+    }
+    // --- END FIX 1 ---
+    
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
@@ -181,15 +220,22 @@ function handleWorkerTick() {
 /**
  * Starts the audio engine and the scheduling worker.
  */
-export async function startAudioEngine() { // <-- MODIFICATION: Added 'async'
-    getAudioContext(); // Ensure context is created
+// --- FIX 3: ASYNC START ENGINE ---
+export async function startAudioEngine() {
+    getAudioContext(); // Ensure context is created (or re-created if 'closed')
     
+    // Explicitly wait for the context to resume if it was suspended
     if (audioContext.state === 'suspended') {
-        await audioContext.resume(); // <-- MODIFICATION: Added 'await'
+        await audioContext.resume();
     }
+    // --- END FIX 3 ---
 
     if (!schedulerWorker) {
-        schedulerWorker = new Worker("metronome_worker.js");
+        // --- FIX 4: Use Blob URL to create worker ---
+        const workerUrl = createWorkerBlob();
+        schedulerWorker = new Worker(workerUrl);
+        URL.revokeObjectURL(workerUrl); // Clean up the URL object
+        // --- END FIX 4 ---
         schedulerWorker.onmessage = handleWorkerTick;
     }
     schedulerWorker.postMessage({ command: "start", interval: LOOKAHEAD_MS });
@@ -225,6 +271,12 @@ export function stopAudioEngine() {
     
     if (schedulerWorker) {
         schedulerWorker.postMessage({ command: "stop" });
+        
+        // --- FIX 2: WORKER RESET ---
+        // Nullify the worker variable to force re-creation
+        // when the app resumes from a suspended state.
+        schedulerWorker = null;
+        // --- END FIX 2 ---
     }
     
     state.visualLoopRunning = false; 
