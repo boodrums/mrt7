@@ -570,9 +570,10 @@ function processManualInput() {
             statusMessage.textContent = `Tempo adjusted manually to ${tempo} BPM.`;
         }
     } else {
-        updateBDpmDisplay();
+        updateBpmDisplay();
     }
 
+    // Crucial step: Hide the input and show the display
     bpmManualInput.classList.add('hidden');
     bpmDisplayWrapper.classList.remove('hidden');
 }
@@ -1003,6 +1004,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Setup Metronome controls
     startStopBtn.addEventListener('click', () => {
+        // FIX: If manual input is visible, process it first before starting/stopping.
+        if (!bpmManualInput.classList.contains('hidden')) {
+            processManualInput();
+        }
+        
         if (isPlaying) { stopMetronome(); } else { startMetronome(); }
     });
     countInBtn.addEventListener('click', cycleCountIn);
