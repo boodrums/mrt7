@@ -191,20 +191,28 @@ h1, h2, h3, button, input {
 
 /* --- END NEW STYLES --- */
 
-/* START/STOP Button */
+/* --- REFACTORED START/STOP Button --- */
 #start-stop-btn {
-    background-color: var(--accent-3); 
-    color: var(--dark-bg); 
     font-size: 1.1rem; 
 }
-#start-stop-btn:hover {
+
+#start-stop-btn.is-stopped {
+    background-color: var(--accent-3); 
+    color: var(--dark-bg); 
+}
+#start-stop-btn.is-stopped:hover {
     background-color: #20c997; 
 }
-/* STOP state color override (Subtle Red) */
-.bg-green-600, .hover\:bg-green-500, .active\:bg-green-700, .focus\:ring-green-500 {
+
+#start-stop-btn.is-playing {
     background-color: var(--start-btn-stop) !important;
     color: var(--light-text) !important;
 }
+#start-stop-btn.is-playing:hover {
+    filter: brightness(1.1);
+}
+/* --- END REFACTOR --- */
+
 
 /* Rhythm Grid & Square Styling */
 #rhythm-grid {
@@ -231,14 +239,18 @@ h1, h2, h3, button, input {
     background-color: #1a1a1a;
 }
 
-/* Visual indicator for the currently playing step */
+/* --- OPTIMIZED: Visual indicator for the currently playing step --- */
 .is-playing {
-    box-shadow: 0 0 15px 5px var(--accent-3), inset 0 0 5px rgba(255, 255, 255, 0.5); 
+    /* REPLACED box-shadow with outline for better render performance */
+    outline: 3px solid var(--accent-3);
+    outline-offset: 2px;
+    
     border-color: #fff; 
     transform: scale(1.05);
 }
 /* Visual indicator for the currently playing step during a SILENT bar */
 .is-silent-playing {
+    /* box-shadow is fine here as it's less "glowy" */
     box-shadow: 0 0 10px 3px #555, inset 0 0 3px #333; 
     border-color: #777; 
 }
