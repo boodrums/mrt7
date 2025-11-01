@@ -329,6 +329,7 @@ function scheduleNote() {
                 
                 // --- VISUAL SCHEDULING (Count-In) ---
                 // We set the visual time (slightly compensated) for the RAF loop to check.
+                // This is the first place that sets a "real" currentStepTime.
                 currentStepTime = time - (VISUAL_LATENCY_MS / 1000);
             }
             
@@ -367,6 +368,7 @@ function scheduleNote() {
             }
 
             // 1. Set the exact time (compensated) for the visual loop to check
+            // This is the second place that sets a "real" currentStepTime.
             currentStepTime = time - (actualCompensationMs / 1000);
             
             // 2. Schedule Sound
@@ -419,6 +421,8 @@ function visualUpdateLoop() {
     const currentTime = audioContext.currentTime;
     
     // Check if the current time is past the calculated visual display time
+    // This check will now FAIL on the first frame(s) until scheduleNote()
+    // runs and sets a real (small) currentStepTime.
     if (currentTime >= currentStepTime) { 
         
         // Ensure we only update the visuals once per step
@@ -566,7 +570,7 @@ function processManualInput() {
             statusMessage.textContent = `Tempo adjusted manually to ${tempo} BPM.`;
         }
     } else {
-        updateBpmDisplay();
+        updateBDpmDisplay();
     }
 
     bpmManualInput.classList.add('hidden');
@@ -924,7 +928,7 @@ function startMetronome() {
     requestWakeLock();
 
     // --- Initialization for Scheduling ---
-    nextNoteTime = audioContext.currentTime + 0.05; // FIX: Add 50ms buffer for stable sound start
+    nextNoteTime = audioContext.currentTime + 0.05; // Add 50ms buffer for stable sound start
     
     // Reset all counters
     currentStep = 0; 
@@ -935,13 +939,15 @@ function startMetronome() {
     // Clear tap history if starting
     tapTempoTimes = [];
 
+    // Full Visual Reset before starting the loop.
+    resetVisuals(); // Clears 'is-playing' class and sets currentVisualSquare = null
     
     // Set up Count-In if enabled
     if (countInBars > 0) {
         isCountingIn = true;
         statusMessage.textContent = `Starting with ${countInBars} count-in bar${countInBars > 1 ? 's' : ''}...`;
     } else {
-        // FIX: Start the timer immediately if no count-in is used
+        // Start the timer immediately if no count-in is used
         startTimer(); 
         statusMessage.textContent = `Metronome running at ${tempo} BPM.`;
     }
@@ -951,7 +957,15 @@ function startMetronome() {
     // --- START RAF POLLING ---
     if (!visualLoopRunning) {
         visualLoopRunning = true;
-        currentStepTime = 0.0; 
+        
+        // --- DEFINITIVE FIX FOR RACE CONDITION ---
+        // Initialize currentStepTime to a large value (e.g., 1 hour).
+        // This PREVENTS the visual loop from running its logic
+        // until the schedulerWorker has run scheduleNote() at least
+        // once and set a REAL, small currentStepTime.
+        currentStepTime = audioContext.currentTime + 3600.0; 
+        // --- END FIX ---
+
         lastStep = -1; 
         requestAnimationFrame(visualUpdateLoop);
     }
